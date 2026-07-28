@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "203913354696",
+    "project_id": "gyutto-cb454",
+    "storage_bucket": "gyutto-cb454.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:203913354696:android:857d5d62d81c4ee72234fd",
+        "android_client_info": {
+          "package_name": "com.example.gyutto"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAN30jTfFsvJDxi5hYa_A7HtDpaZWU5lA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
