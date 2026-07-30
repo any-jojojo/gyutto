@@ -7,6 +7,8 @@ void main() {
     await tester.pumpWidget(const GyuttoApp());
 
     expect(find.text(AppStrings.appName), findsOneWidget);
-    expect(find.text(AppStrings.homeMessage), findsOneWidget);
+    expect(find.text(AppStrings.homeTitle), findsOneWidget);
+    expect(find.text(AppStrings.createFamily), findsOneWidget);
+    expect(find.text(AppStrings.joinFamily), findsOneWidget);
   });
 }

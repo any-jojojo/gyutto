@@ -3,9 +3,9 @@
     "short_name": "ぎゅっと",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#E6EFFF",
+    "theme_color": "#B8D8F7",
+    "description": "家族の安心を、ぎゅっと。",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
