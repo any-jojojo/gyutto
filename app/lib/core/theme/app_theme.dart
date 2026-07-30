@@ -59,6 +59,30 @@ class AppTheme {
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
       ),
+      inputDecorationTheme: InputDecorationTheme(
+        floatingLabelStyle: const TextStyle(
+          color: AppConstants.inkColor,
+          fontWeight: FontWeight.w700,
+        ),
+        labelStyle: TextStyle(
+          color: AppConstants.inkColor.withValues(alpha: 0.78),
+          fontWeight: FontWeight.w700,
+        ),
+        prefixIconColor: AppConstants.inkColor.withValues(alpha: 0.72),
+        enabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(
+            color: AppConstants.inkColor.withValues(alpha: 0.38),
+          ),
+        ),
+        focusedBorder: const UnderlineInputBorder(
+          borderSide: BorderSide(color: AppConstants.inkColor, width: 1.4),
+        ),
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: AppConstants.inkColor,
+        selectionColor: AppConstants.connectionColor.withValues(alpha: 0.48),
+        selectionHandleColor: AppConstants.inkColor,
+      ),
     );
   }
 }

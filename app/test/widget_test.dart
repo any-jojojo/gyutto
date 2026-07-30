@@ -11,4 +11,16 @@ void main() {
     expect(find.text(AppStrings.createFamily), findsOneWidget);
     expect(find.text(AppStrings.joinFamily), findsOneWidget);
   });
+
+  testWidgets('opens login screen from home action', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const GyuttoApp());
+
+    await tester.tap(find.text(AppStrings.createFamily));
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.loginTitle), findsWidgets);
+    expect(find.text(AppStrings.loginAction), findsOneWidget);
+  });
 }
