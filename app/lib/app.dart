@@ -1,39 +1,21 @@
 import 'package:flutter/material.dart';
 
+import 'core/constants/app_strings.dart';
+import 'core/router/app_router.dart';
+import 'core/router/app_routes.dart';
+import 'core/theme/app_theme.dart';
+
 class GyuttoApp extends StatelessWidget {
   const GyuttoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ぎゅっと',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2F80ED),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2F80ED),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
-      home: const HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('ぎゅっと')),
-      body: const SafeArea(child: Center(child: Text('家族のチャットをはじめましょう'))),
+      title: AppStrings.appName,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      initialRoute: AppRoutes.home,
+      onGenerateRoute: AppRouter.onGenerateRoute,
     );
   }
 }
