@@ -60,6 +60,10 @@ class AppTheme {
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
+        errorStyle: const TextStyle(
+          color: AppConstants.errorColor,
+          fontWeight: FontWeight.w700,
+        ),
         floatingLabelStyle: const TextStyle(
           color: AppConstants.inkColor,
           fontWeight: FontWeight.w700,
@@ -76,6 +80,12 @@ class AppTheme {
         ),
         focusedBorder: const UnderlineInputBorder(
           borderSide: BorderSide(color: AppConstants.inkColor, width: 1.4),
+        ),
+        errorBorder: const UnderlineInputBorder(
+          borderSide: BorderSide(color: AppConstants.errorColor, width: 1.2),
+        ),
+        focusedErrorBorder: const UnderlineInputBorder(
+          borderSide: BorderSide(color: AppConstants.errorColor, width: 1.4),
         ),
       ),
       textSelectionTheme: TextSelectionThemeData(

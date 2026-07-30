@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../domain/app_user.dart';
+import '../models/app_user.dart';
 
 class AuthRepository {
   AuthRepository({FirebaseAuth? firebaseAuth})
@@ -42,6 +42,23 @@ class AuthRepository {
     }
 
     return AppUser.fromFirebaseUser(user);
+  }
+
+  Future<AppUser> createUserWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    final credential = await _firebaseAuth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    final user = credential.user;
+
+    if (user == null) {
+      throw const AuthException('登録ユーザーを確認できませんでした。');
+    }
+
+    return AppUser.fromFirebaseUser(user, role: AppUserRole.familyAdmin);
   }
 
   Future<AppUser> signInWithCustomToken(String token) async {

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
-import '../data/auth_repository.dart';
+import '../../../repositories/auth_repository.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.authRepository});
@@ -21,8 +21,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  var _authMode = _AuthMode.login;
   var _isSubmitting = false;
   String? _errorMessage;
+  String? _successMessage;
 
   @override
   void dispose() {
@@ -31,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _signIn() async {
+  Future<void> _submit() async {
     final formState = _formKey.currentState;
     if (formState == null || !formState.validate()) {
       return;
@@ -40,20 +42,28 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _isSubmitting = true;
       _errorMessage = null;
+      _successMessage = null;
     });
 
     try {
       final authRepository = widget.authRepository ?? AuthRepository();
-      await authRepository.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
-
-      if (!mounted) {
-        return;
+      if (_authMode == _AuthMode.login) {
+        await authRepository.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+      } else {
+        await authRepository.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
       }
 
-      Navigator.of(context).pop();
+      setState(() {
+        _successMessage = _authMode == _AuthMode.login
+            ? AppStrings.loginSuccess
+            : AppStrings.signUpSuccess;
+      });
     } on FirebaseAuthException catch (error) {
       setState(() {
         _errorMessage = _firebaseAuthErrorMessage(error);
@@ -64,7 +74,9 @@ class _LoginScreenState extends State<LoginScreen> {
       });
     } catch (_) {
       setState(() {
-        _errorMessage = AppStrings.loginUnknownError;
+        _errorMessage = _authMode == _AuthMode.login
+            ? AppStrings.loginUnknownError
+            : AppStrings.signUpUnknownError;
       });
     } finally {
       if (mounted) {
@@ -79,17 +91,24 @@ class _LoginScreenState extends State<LoginScreen> {
     return switch (error.code) {
       'invalid-email' => AppStrings.loginInvalidEmail,
       'user-disabled' => AppStrings.loginUserDisabled,
+      'email-already-in-use' => AppStrings.signUpEmailAlreadyInUse,
+      'weak-password' => AppStrings.signUpWeakPassword,
+      'password-does-not-meet-requirements' =>
+        AppStrings.authPasswordPolicyError,
+      'operation-not-allowed' => AppStrings.authOperationNotAllowed,
+      'unauthorized-domain' => AppStrings.authUnauthorizedDomain,
       'user-not-found' ||
       'wrong-password' ||
       'invalid-credential' => AppStrings.loginInvalidCredential,
-      _ => AppStrings.loginUnknownError,
+      _ =>
+        '${_authMode == _AuthMode.login ? AppStrings.loginUnknownError : AppStrings.signUpUnknownError} (${error.code})',
     };
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.loginTitle)),
+      appBar: AppBar(title: Text(_pageTitle)),
       body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -119,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 32),
               Text(
-                AppStrings.loginTitle,
+                _pageTitle,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: AppConstants.inkColor,
                   fontWeight: FontWeight.w800,
@@ -127,11 +146,36 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                AppStrings.loginDescription,
+                _pageDescription,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppConstants.inkColor.withValues(alpha: 0.78),
                   height: 1.45,
                 ),
+              ),
+              const SizedBox(height: 20),
+              SegmentedButton<_AuthMode>(
+                segments: const [
+                  ButtonSegment<_AuthMode>(
+                    value: _AuthMode.login,
+                    label: Text(AppStrings.loginTab),
+                    icon: Icon(Icons.login_rounded),
+                  ),
+                  ButtonSegment<_AuthMode>(
+                    value: _AuthMode.signUp,
+                    label: Text(AppStrings.signUpTab),
+                    icon: Icon(Icons.person_add_alt_rounded),
+                  ),
+                ],
+                selected: {_authMode},
+                onSelectionChanged: _isSubmitting
+                    ? null
+                    : (selection) {
+                        setState(() {
+                          _authMode = selection.first;
+                          _errorMessage = null;
+                          _successMessage = null;
+                        });
+                      },
               ),
               const SizedBox(height: 24),
               Form(
@@ -166,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _passwordController,
                       obscureText: true,
                       textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _signIn(),
+                      onFieldSubmitted: (_) => _submit(),
                       style: const TextStyle(
                         color: AppConstants.inkColor,
                         fontWeight: FontWeight.w700,
@@ -179,6 +223,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         if (value == null || value.isEmpty) {
                           return AppStrings.passwordRequired;
                         }
+                        if (_authMode == _AuthMode.signUp && value.length < 6) {
+                          return AppStrings.passwordTooShort;
+                        }
                         return null;
                       },
                     ),
@@ -189,18 +236,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 16),
                 _AuthErrorMessage(message: _errorMessage!),
               ],
+              if (_successMessage != null) ...[
+                const SizedBox(height: 16),
+                _AuthSuccessMessage(message: _successMessage!),
+              ],
               const SizedBox(height: 24),
               FilledButton.icon(
-                onPressed: _isSubmitting ? null : _signIn,
+                onPressed: _isSubmitting ? null : _submit,
                 icon: _isSubmitting
                     ? const SizedBox.square(
                         dimension: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Icons.login_rounded),
-                label: Text(
-                  _isSubmitting ? AppStrings.loggingIn : AppStrings.loginAction,
-                ),
+                    : Icon(_submitIcon),
+                label: Text(_isSubmitting ? _submittingLabel : _submitLabel),
               ),
               const SizedBox(height: 18),
               Text(
@@ -217,7 +266,44 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+
+  String get _pageTitle {
+    return switch (_authMode) {
+      _AuthMode.login => AppStrings.loginTitle,
+      _AuthMode.signUp => AppStrings.signUpTitle,
+    };
+  }
+
+  String get _pageDescription {
+    return switch (_authMode) {
+      _AuthMode.login => AppStrings.loginDescription,
+      _AuthMode.signUp => AppStrings.signUpDescription,
+    };
+  }
+
+  String get _submitLabel {
+    return switch (_authMode) {
+      _AuthMode.login => AppStrings.loginAction,
+      _AuthMode.signUp => AppStrings.signUpAction,
+    };
+  }
+
+  String get _submittingLabel {
+    return switch (_authMode) {
+      _AuthMode.login => AppStrings.loggingIn,
+      _AuthMode.signUp => AppStrings.signingUp,
+    };
+  }
+
+  IconData get _submitIcon {
+    return switch (_authMode) {
+      _AuthMode.login => Icons.login_rounded,
+      _AuthMode.signUp => Icons.person_add_alt_rounded,
+    };
+  }
 }
+
+enum _AuthMode { login, signUp }
 
 class _AuthErrorMessage extends StatelessWidget {
   const _AuthErrorMessage({required this.message});
@@ -226,9 +312,29 @@ class _AuthErrorMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Text(
+        message,
+        style: const TextStyle(
+          color: AppConstants.errorColor,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthSuccessMessage extends StatelessWidget {
+  const _AuthSuccessMessage({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppConstants.warmColor.withValues(alpha: 0.52),
+        color: AppConstants.trustColor.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
@@ -236,9 +342,17 @@ class _AuthErrorMessage extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.error_outline_rounded, color: Color(0xFFFF8F72)),
+            const Icon(
+              Icons.check_circle_outline_rounded,
+              color: AppConstants.inkColor,
+            ),
             const SizedBox(width: 8),
-            Expanded(child: Text(message)),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(color: AppConstants.inkColor),
+              ),
+            ),
           ],
         ),
       ),
