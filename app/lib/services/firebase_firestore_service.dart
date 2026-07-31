@@ -14,6 +14,10 @@ class FirebaseFirestoreService {
     return _firestore.collection('families');
   }
 
+  CollectionReference<Map<String, dynamic>> get parentInviteCodes {
+    return _firestore.collection('parentInviteCodes');
+  }
+
   DocumentReference<Map<String, dynamic>> user(String userId) {
     return users.doc(userId);
   }

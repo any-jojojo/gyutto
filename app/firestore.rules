@@ -10,6 +10,17 @@ service cloud.firestore {
       allow read, write: if signedIn() && request.auth.uid == userId;
     }
 
+    match /parentInviteCodes/{codeHash} {
+      allow get: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.type == 'parentInvite'
+        && request.resource.data.status == 'active';
+      allow update: if signedIn()
+        && resource.data.status == 'active'
+        && request.resource.data.status == 'used'
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['status']);
+    }
+
     match /families/{familyId} {
       allow create: if signedIn()
         && request.resource.data.adminUserId == request.auth.uid;

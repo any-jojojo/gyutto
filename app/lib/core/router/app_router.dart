@@ -4,6 +4,9 @@ import '../../features/auth/presentation/login_screen.dart';
 import '../../features/family/presentation/create_family_screen.dart';
 import '../../features/home/logged_in_home_screen.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/invite/presentation/invite_child_qr_screen.dart';
+import '../../features/invite/presentation/invite_parent_screen.dart';
+import '../../features/invite/presentation/join_parent_invite_screen.dart';
 import '../constants/app_strings.dart';
 import 'app_routes.dart';
 
@@ -19,6 +22,9 @@ class AppRouter {
           AppRoutes.login => const LoginScreen(),
           AppRoutes.loggedInHome => const LoggedInHomeScreen(),
           AppRoutes.createFamily => const CreateFamilyScreen(),
+          AppRoutes.inviteParent => const InviteParentScreen(),
+          AppRoutes.joinParentInvite => const JoinParentInviteScreen(),
+          AppRoutes.inviteChild => const InviteChildQrScreen(),
           _ => const _UnknownRouteScreen(),
         };
       },

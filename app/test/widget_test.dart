@@ -4,6 +4,8 @@ import 'package:gyutto/app.dart';
 import 'package:gyutto/core/constants/app_strings.dart';
 import 'package:gyutto/core/router/app_router.dart';
 import 'package:gyutto/core/router/app_routes.dart';
+import 'package:gyutto/features/home/logged_in_home_screen.dart';
+import 'package:gyutto/models/app_user.dart';
 
 void main() {
   testWidgets('shows initial home screen', (WidgetTester tester) async {
@@ -43,28 +45,30 @@ void main() {
 
   testWidgets('shows logged in home route', (WidgetTester tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        initialRoute: AppRoutes.loggedInHome,
+      MaterialApp(
         onGenerateRoute: AppRouter.onGenerateRoute,
+        home: LoggedInHomeScreen(userStream: Stream.value(_familyAdminUser)),
       ),
     );
+    await tester.pump();
 
     expect(find.text(AppStrings.loggedInHomeTitle), findsOneWidget);
     expect(find.text(AppStrings.loggedInHomeDescription), findsOneWidget);
-    expect(find.text(AppStrings.createFamilyPageTitle), findsOneWidget);
+    expect(find.text(AppStrings.createFamilyPageTitle), findsNothing);
     expect(find.text(AppStrings.inviteParentAccount), findsOneWidget);
     expect(find.text(AppStrings.inviteChildAccount), findsOneWidget);
   });
 
-  testWidgets('opens create family screen from logged in home', (
+  testWidgets('opens create family screen before family creation', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        initialRoute: AppRoutes.loggedInHome,
+      MaterialApp(
         onGenerateRoute: AppRouter.onGenerateRoute,
+        home: LoggedInHomeScreen(userStream: Stream.value(_userWithoutFamily)),
       ),
     );
+    await tester.pump();
 
     await tester.tap(find.text(AppStrings.createFamilyPageTitle));
     await tester.pumpAndSettle();
@@ -72,4 +76,117 @@ void main() {
     expect(find.text(AppStrings.familyName), findsOneWidget);
     expect(find.text(AppStrings.adminDisplayName), findsOneWidget);
   });
+
+  testWidgets('hides invite actions before family creation', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        home: LoggedInHomeScreen(userStream: Stream.value(_userWithoutFamily)),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text(AppStrings.createFamilyPageTitle), findsOneWidget);
+    expect(find.text(AppStrings.joinFamily), findsOneWidget);
+    expect(find.text(AppStrings.inviteParentAccount), findsNothing);
+    expect(find.text(AppStrings.inviteChildAccount), findsNothing);
+  });
+
+  testWidgets('opens parent invite join screen without family', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        home: LoggedInHomeScreen(userStream: Stream.value(_userWithoutFamily)),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text(AppStrings.joinFamily));
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.joinParentInvitePageTitle), findsWidgets);
+    expect(find.text(AppStrings.parentInviteCode), findsOneWidget);
+  });
+
+  testWidgets('opens invite screens from logged in home', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        home: LoggedInHomeScreen(userStream: Stream.value(_familyAdminUser)),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text(AppStrings.inviteParentAccount));
+    await tester.pumpAndSettle();
+    expect(find.text(AppStrings.inviteParentPageTitle), findsWidgets);
+
+    Navigator.of(
+      tester.element(find.text(AppStrings.inviteParentPageTitle).first),
+    ).pop();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(AppStrings.inviteChildAccount));
+    await tester.pumpAndSettle();
+    expect(find.text(AppStrings.inviteChildPageTitle), findsWidgets);
+    expect(find.text(AppStrings.inviteChildQrLabel), findsOneWidget);
+  });
+
+  testWidgets('shows only child invite action for parent user', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        home: LoggedInHomeScreen(userStream: Stream.value(_parentUser)),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text(AppStrings.createFamilyPageTitle), findsNothing);
+    expect(find.text(AppStrings.inviteParentAccount), findsNothing);
+    expect(find.text(AppStrings.inviteChildAccount), findsOneWidget);
+  });
+
+  testWidgets('opens parent invite screen route', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        initialRoute: AppRoutes.inviteParent,
+        onGenerateRoute: AppRouter.onGenerateRoute,
+      ),
+    );
+
+    expect(find.text(AppStrings.inviteParentPageTitle), findsWidgets);
+    expect(find.text(AppStrings.createParentInviteCode), findsOneWidget);
+  });
 }
+
+const _familyAdminUser = AppUser(
+  uid: 'admin-user',
+  displayName: '管理者',
+  email: 'admin@example.com',
+  familyId: 'family-1',
+  role: AppUserRole.familyAdmin,
+);
+
+const _userWithoutFamily = AppUser(
+  uid: 'new-user',
+  displayName: null,
+  email: 'new@example.com',
+  familyId: null,
+  role: AppUserRole.familyAdmin,
+);
+
+const _parentUser = AppUser(
+  uid: 'parent-user',
+  displayName: '親',
+  email: 'parent@example.com',
+  familyId: 'family-1',
+  role: AppUserRole.parent,
+);
