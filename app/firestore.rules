@@ -1,0 +1,37 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    match /users/{userId} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /families/{familyId} {
+      allow create: if signedIn()
+        && request.resource.data.adminUserId == request.auth.uid;
+
+      allow read, update: if signedIn();
+
+      match /members/{memberId} {
+        allow create: if signedIn() && memberId == request.auth.uid;
+        allow read: if signedIn();
+      }
+
+      match /messages/{messageId} {
+        allow read, create: if signedIn();
+      }
+
+      match /invites/{inviteId} {
+        allow read, write: if signedIn();
+      }
+
+      match /passwordResetRequests/{requestId} {
+        allow read, write: if signedIn();
+      }
+    }
+  }
+}

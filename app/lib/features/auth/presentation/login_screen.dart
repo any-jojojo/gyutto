@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/router/app_routes.dart';
 import '../../../repositories/auth_repository.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -64,6 +65,16 @@ class _LoginScreenState extends State<LoginScreen> {
             ? AppStrings.loginSuccess
             : AppStrings.signUpSuccess;
       });
+
+      await Future<void>.delayed(const Duration(seconds: 2));
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(AppRoutes.loggedInHome, (route) => false);
     } on FirebaseAuthException catch (error) {
       setState(() {
         _errorMessage = _firebaseAuthErrorMessage(error);
@@ -167,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ],
                 selected: {_authMode},
-                onSelectionChanged: _isSubmitting
+                onSelectionChanged: _isSubmitting || _successMessage != null
                     ? null
                     : (selection) {
                         setState(() {
@@ -242,7 +253,9 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
               const SizedBox(height: 24),
               FilledButton.icon(
-                onPressed: _isSubmitting ? null : _submit,
+                onPressed: _isSubmitting || _successMessage != null
+                    ? null
+                    : _submit,
                 icon: _isSubmitting
                     ? const SizedBox.square(
                         dimension: 18,

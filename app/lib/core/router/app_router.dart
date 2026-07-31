@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/family/presentation/create_family_screen.dart';
+import '../../features/home/logged_in_home_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../constants/app_strings.dart';
 import 'app_routes.dart';
@@ -15,6 +17,8 @@ class AppRouter {
         return switch (settings.name) {
           AppRoutes.home || null => const HomeScreen(),
           AppRoutes.login => const LoginScreen(),
+          AppRoutes.loggedInHome => const LoggedInHomeScreen(),
+          AppRoutes.createFamily => const CreateFamilyScreen(),
           _ => const _UnknownRouteScreen(),
         };
       },
