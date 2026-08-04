@@ -73,6 +73,56 @@ class InviteRepository {
     );
   }
 
+  Future<CreateInviteResult> createChildQrInvite({
+    required String familyId,
+    required String createdBy,
+    required Uri baseUri,
+  }) async {
+    final token = _generateInviteToken();
+    final tokenHash = _hashInviteCode(token);
+    final inviteReference = _firestoreService.invites(familyId).doc();
+    final tokenReference = _firestoreService.childInviteTokens.doc(tokenHash);
+    final expiresAt = DateTime.now().add(AppConstants.inviteValidityDuration);
+    final joinUri = baseUri.replace(
+      path: '/',
+      queryParameters: null,
+      fragment:
+          '${AppRoutesPath.childInviteJoin}?token=${Uri.encodeComponent(token)}',
+    );
+    final batch = FirebaseFirestore.instance.batch();
+
+    batch.set(inviteReference, {
+      'type': InviteType.childQrInvite.toJson(),
+      'targetRole': AppUserRole.child.toJson(),
+      'tokenHash': tokenHash,
+      'createdBy': createdBy,
+      'expiresAt': Timestamp.fromDate(expiresAt),
+      'usedAt': null,
+      'usedBy': null,
+      'status': 'active',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    batch.set(tokenReference, {
+      'familyId': familyId,
+      'inviteId': inviteReference.id,
+      'type': InviteType.childQrInvite.toJson(),
+      'targetRole': AppUserRole.child.toJson(),
+      'expiresAt': Timestamp.fromDate(expiresAt),
+      'status': 'active',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    await batch.commit();
+
+    return CreateInviteResult(
+      inviteId: inviteReference.id,
+      inviteUrl: joinUri.toString(),
+      token: token,
+      expiresAt: expiresAt,
+    );
+  }
+
   Future<JoinParentInviteResult> joinParentInvite({
     required String code,
     required String userId,
@@ -135,6 +185,65 @@ class InviteRepository {
     return JoinParentInviteResult(familyId: familyId);
   }
 
+  Future<JoinChildInviteResult> joinChildInvite({
+    required String token,
+    required String displayName,
+    required String approvedBy,
+  }) async {
+    final tokenHash = _hashInviteCode(token);
+    final tokenReference = _firestoreService.childInviteTokens.doc(tokenHash);
+    final tokenSnapshot = await tokenReference.get();
+    final tokenData = tokenSnapshot.data();
+
+    if (!tokenSnapshot.exists || tokenData == null) {
+      throw const InviteException('QRコードの招待情報が見つかりません。');
+    }
+
+    if (tokenData['status'] != 'active') {
+      throw const InviteException('このQRコードは利用できません。');
+    }
+
+    final expiresAt = (tokenData['expiresAt'] as Timestamp?)?.toDate();
+    if (expiresAt == null || expiresAt.isBefore(DateTime.now())) {
+      throw const InviteException('有効期限が切れました。再発行してください。');
+    }
+
+    final familyId = tokenData['familyId'] as String? ?? '';
+    final inviteId = tokenData['inviteId'] as String? ?? '';
+    if (familyId.isEmpty || inviteId.isEmpty) {
+      throw const InviteException('招待情報を確認できませんでした。');
+    }
+
+    final childReference = _firestoreService.members(familyId).doc();
+    final inviteReference = _firestoreService.invites(familyId).doc(inviteId);
+    final batch = FirebaseFirestore.instance.batch();
+
+    batch.set(childReference, {
+      'userId': childReference.id,
+      'displayName': displayName,
+      'role': AppUserRole.child.toJson(),
+      'status': 'active',
+      'createdBy': approvedBy,
+      'inviteId': inviteId,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    batch.update(inviteReference, {
+      'status': 'used',
+      'usedAt': FieldValue.serverTimestamp(),
+      'usedBy': childReference.id,
+    });
+    batch.update(tokenReference, {'status': 'used'});
+
+    await batch.commit();
+
+    return JoinChildInviteResult(
+      familyId: familyId,
+      childMemberId: childReference.id,
+    );
+  }
+
   Future<CreateInviteResult> createInvite({
     required String familyId,
     required InviteType type,
@@ -173,6 +282,16 @@ class InviteRepository {
     return '${code.substring(0, 4)}-${code.substring(4)}';
   }
 
+  String _generateInviteToken() {
+    const characters =
+        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random.secure();
+    return List.generate(
+      32,
+      (_) => characters[random.nextInt(characters.length)],
+    ).join();
+  }
+
   String _hashInviteCode(String code) {
     return sha256.convert(utf8.encode(_normalizeInviteCode(code))).toString();
   }
@@ -180,6 +299,12 @@ class InviteRepository {
   String _normalizeInviteCode(String code) {
     return code.trim().replaceAll('-', '').toUpperCase();
   }
+}
+
+class AppRoutesPath {
+  const AppRoutesPath._();
+
+  static const childInviteJoin = '/invites/child/join';
 }
 
 class CreateInviteResult {
@@ -208,6 +333,16 @@ class JoinParentInviteResult {
   const JoinParentInviteResult({required this.familyId});
 
   final String familyId;
+}
+
+class JoinChildInviteResult {
+  const JoinChildInviteResult({
+    required this.familyId,
+    required this.childMemberId,
+  });
+
+  final String familyId;
+  final String childMemberId;
 }
 
 class InviteException implements Exception {

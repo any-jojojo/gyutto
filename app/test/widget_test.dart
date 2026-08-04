@@ -135,7 +135,7 @@ void main() {
     await tester.tap(find.text(AppStrings.inviteChildAccount));
     await tester.pumpAndSettle();
     expect(find.text(AppStrings.inviteChildPageTitle), findsWidgets);
-    expect(find.text(AppStrings.inviteChildQrLabel), findsOneWidget);
+    expect(find.text(AppStrings.createChildQrInvite), findsOneWidget);
   });
 
   testWidgets('shows only child invite action for parent user', (
@@ -164,6 +164,21 @@ void main() {
 
     expect(find.text(AppStrings.inviteParentPageTitle), findsWidgets);
     expect(find.text(AppStrings.createParentInviteCode), findsOneWidget);
+  });
+
+  testWidgets('opens child invite join screen route', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        initialRoute: '${AppRoutes.joinChildInvite}?token=test-token',
+        onGenerateRoute: AppRouter.onGenerateRoute,
+      ),
+    );
+
+    expect(find.text(AppStrings.joinChildInvitePageTitle), findsWidgets);
+    expect(find.text(AppStrings.childInviteConfirmMessage), findsOneWidget);
+    expect(find.text(AppStrings.childDisplayName), findsOneWidget);
   });
 }
 

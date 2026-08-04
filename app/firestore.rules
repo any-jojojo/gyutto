@@ -21,6 +21,17 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).changedKeys().hasOnly(['status']);
     }
 
+    match /childInviteTokens/{tokenHash} {
+      allow get: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.type == 'childQrInvite'
+        && request.resource.data.status == 'active';
+      allow update: if signedIn()
+        && resource.data.status == 'active'
+        && request.resource.data.status == 'used'
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['status']);
+    }
+
     match /families/{familyId} {
       allow create: if signedIn()
         && request.resource.data.adminUserId == request.auth.uid;
@@ -28,7 +39,21 @@ service cloud.firestore {
       allow read, update: if signedIn();
 
       match /members/{memberId} {
-        allow create: if signedIn() && memberId == request.auth.uid;
+        allow create: if signedIn()
+          && (
+            memberId == request.auth.uid
+            || (
+              request.resource.data.role == 'child'
+              && request.resource.data.createdBy == request.auth.uid
+              && request.resource.data.inviteId is string
+              && get(
+                /databases/$(database)/documents/families/$(familyId)/invites/$(request.resource.data.inviteId)
+              ).data.type == 'childQrInvite'
+              && get(
+                /databases/$(database)/documents/families/$(familyId)/invites/$(request.resource.data.inviteId)
+              ).data.status == 'active'
+            )
+          );
         allow read: if signedIn();
       }
 

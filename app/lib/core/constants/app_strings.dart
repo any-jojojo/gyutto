@@ -65,6 +65,16 @@ class AppStrings {
   static const inviteChildPageTitle = '子供アカウントを追加';
   static const inviteChildPageDescription = '子供のスマホでQRコードを読み取ると、家族への参加に進めます。';
   static const inviteChildQrLabel = '子供用QRコード';
+  static const createChildQrInvite = 'QRコードを発行する';
+  static const childInviteUrlLabel = '読み取りURL';
+  static const joinChildInvitePageTitle = '子供アカウント登録';
+  static const joinChildInvitePageDescription = '家族に参加する子供の表示名を登録します。';
+  static const childInviteConfirmMessage = 'この家族に参加しますか？';
+  static const childDisplayName = '子供の表示名';
+  static const childDisplayNameRequired = '子供の表示名を入力してください。';
+  static const joinChildInviteAction = '登録する';
+  static const joinChildInviteSuccess = '子供アカウントを登録しました。';
+  static const childInviteTokenMissing = 'QRコードの情報を確認できませんでした。';
   static const inviteExpiresAt = 'あと1時間有効  2026/07/31 14:00まで';
   static const createFamilyPageDescription = '家族名とあなたの表示名を登録します。';
   static const createFamilyAction = '家族を作成する';

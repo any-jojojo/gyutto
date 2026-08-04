@@ -8,4 +8,5 @@ class AppRoutes {
   static const inviteParent = '/invites/parent';
   static const joinParentInvite = '/invites/parent/join';
   static const inviteChild = '/invites/child';
+  static const joinChildInvite = '/invites/child/join';
 }
