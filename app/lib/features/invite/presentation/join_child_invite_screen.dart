@@ -11,11 +11,13 @@ class JoinChildInviteScreen extends StatefulWidget {
   const JoinChildInviteScreen({
     super.key,
     required this.token,
+    this.familyName,
     this.authRepository,
     this.inviteRepository,
   });
 
   final String? token;
+  final String? familyName;
   final AuthRepository? authRepository;
   final InviteRepository? inviteRepository;
 
@@ -63,30 +65,17 @@ class _JoinChildInviteScreenState extends State<JoinChildInviteScreen> {
     try {
       final authRepository = widget.authRepository ?? AuthRepository();
       final inviteRepository = widget.inviteRepository ?? InviteRepository();
-      final currentUser = authRepository.currentUser;
-
-      if (currentUser == null) {
-        setState(() {
-          _errorMessage = AppStrings.joinParentInviteLoginRequired;
-        });
-        return;
-      }
+      final currentUser = await authRepository.startNewAnonymousChildSession();
 
       await inviteRepository.joinChildInvite(
         token: token,
         displayName: _displayNameController.text.trim(),
-        approvedBy: currentUser.uid,
+        userId: currentUser.uid,
       );
 
       if (!mounted) {
         return;
       }
-
-      setState(() {
-        _successMessage = AppStrings.joinChildInviteSuccess;
-      });
-
-      await Future<void>.delayed(const Duration(seconds: 2));
 
       if (!mounted) {
         return;
@@ -96,6 +85,10 @@ class _JoinChildInviteScreenState extends State<JoinChildInviteScreen> {
         context,
       ).pushNamedAndRemoveUntil(AppRoutes.loggedInHome, (route) => false);
     } on InviteException catch (error) {
+      setState(() {
+        _errorMessage = error.message;
+      });
+    } on AuthException catch (error) {
       setState(() {
         _errorMessage = error.message;
       });
@@ -157,7 +150,7 @@ class _JoinChildInviteScreenState extends State<JoinChildInviteScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                AppStrings.childInviteConfirmMessage,
+                '${widget.familyName?.trim().isNotEmpty ?? false ? widget.familyName!.trim() : 'この家族'}に参加しますか？',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: AppConstants.inkColor,
                   fontWeight: FontWeight.w800,

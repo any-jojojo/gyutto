@@ -72,6 +72,21 @@ class AuthRepository {
     return AppUser.fromFirebaseUser(user, role: AppUserRole.child);
   }
 
+  Future<AppUser> startNewAnonymousChildSession() async {
+    if (_firebaseAuth.currentUser != null) {
+      await _firebaseAuth.signOut();
+    }
+
+    final credential = await _firebaseAuth.signInAnonymously();
+    final user = credential.user;
+
+    if (user == null) {
+      throw const AuthException('子どもアカウントを開始できませんでした。');
+    }
+
+    return AppUser.fromFirebaseUser(user, role: AppUserRole.child);
+  }
+
   Future<void> signOut() {
     return _firebaseAuth.signOut();
   }

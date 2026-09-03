@@ -30,6 +30,7 @@ class AppRouter {
           AppRoutes.inviteChild => const InviteChildQrScreen(),
           AppRoutes.joinChildInvite => JoinChildInviteScreen(
             token: routeUri.queryParameters['token'],
+            familyName: routeUri.queryParameters['familyName'],
           ),
           _ => const _UnknownRouteScreen(),
         };

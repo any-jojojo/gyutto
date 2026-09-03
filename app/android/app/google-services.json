@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:203913354696:android:857d5d62d81c4ee72234fd",
+        "mobilesdk_app_id": "1:203913354696:android:bdd808f1498256e12234fd",
         "android_client_info": {
-          "package_name": "com.example.gyutto"
+          "package_name": "jp.gyutto.app"
         }
       },
       "oauth_client": [],

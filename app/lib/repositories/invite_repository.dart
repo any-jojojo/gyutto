@@ -78,6 +78,8 @@ class InviteRepository {
     required String createdBy,
     required Uri baseUri,
   }) async {
+    final familySnapshot = await _firestoreService.family(familyId).get();
+    final familyName = familySnapshot.data()?['name'] as String? ?? '';
     final token = _generateInviteToken();
     final tokenHash = _hashInviteCode(token);
     final inviteReference = _firestoreService.invites(familyId).doc();
@@ -87,7 +89,7 @@ class InviteRepository {
       path: '/',
       queryParameters: null,
       fragment:
-          '${AppRoutesPath.childInviteJoin}?token=${Uri.encodeComponent(token)}',
+          '${AppRoutesPath.childInviteJoin}?token=${Uri.encodeComponent(token)}&familyName=${Uri.encodeComponent(familyName)}',
     );
     final batch = FirebaseFirestore.instance.batch();
 
@@ -105,6 +107,7 @@ class InviteRepository {
 
     batch.set(tokenReference, {
       'familyId': familyId,
+      'familyName': familyName,
       'inviteId': inviteReference.id,
       'type': InviteType.childQrInvite.toJson(),
       'targetRole': AppUserRole.child.toJson(),
@@ -188,7 +191,7 @@ class InviteRepository {
   Future<JoinChildInviteResult> joinChildInvite({
     required String token,
     required String displayName,
-    required String approvedBy,
+    required String userId,
   }) async {
     final tokenHash = _hashInviteCode(token);
     final tokenReference = _firestoreService.childInviteTokens.doc(tokenHash);
@@ -214,7 +217,7 @@ class InviteRepository {
       throw const InviteException('招待情報を確認できませんでした。');
     }
 
-    final childReference = _firestoreService.members(familyId).doc();
+    final childReference = _firestoreService.members(familyId).doc(userId);
     final inviteReference = _firestoreService.invites(familyId).doc(inviteId);
     final batch = FirebaseFirestore.instance.batch();
 
@@ -223,11 +226,20 @@ class InviteRepository {
       'displayName': displayName,
       'role': AppUserRole.child.toJson(),
       'status': 'active',
-      'createdBy': approvedBy,
+      'createdBy': userId,
       'inviteId': inviteId,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+
+    batch.set(_firestoreService.user(userId), {
+      'displayName': displayName,
+      'email': null,
+      'familyId': familyId,
+      'role': AppUserRole.child.toJson(),
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
     batch.update(inviteReference, {
       'status': 'used',

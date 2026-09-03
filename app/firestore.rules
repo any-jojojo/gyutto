@@ -59,6 +59,9 @@ service cloud.firestore {
 
       match /messages/{messageId} {
         allow read, create: if signedIn();
+        allow update: if signedIn()
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['readBy'])
+          && request.resource.data.readBy.diff(resource.data.readBy).affectedKeys().hasOnly([request.auth.uid]);
       }
 
       match /invites/{inviteId} {

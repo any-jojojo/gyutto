@@ -6,6 +6,7 @@ import 'package:gyutto/core/router/app_router.dart';
 import 'package:gyutto/core/router/app_routes.dart';
 import 'package:gyutto/features/home/logged_in_home_screen.dart';
 import 'package:gyutto/models/app_user.dart';
+import 'package:gyutto/models/chat_message.dart';
 
 void main() {
   testWidgets('shows initial home screen', (WidgetTester tester) async {
@@ -55,6 +56,7 @@ void main() {
     expect(find.text(AppStrings.loggedInHomeTitle), findsOneWidget);
     expect(find.text(AppStrings.loggedInHomeDescription), findsOneWidget);
     expect(find.text(AppStrings.createFamilyPageTitle), findsNothing);
+    expect(find.text(AppStrings.familyChat), findsOneWidget);
     expect(find.text(AppStrings.inviteParentAccount), findsOneWidget);
     expect(find.text(AppStrings.inviteChildAccount), findsOneWidget);
   });
@@ -90,6 +92,7 @@ void main() {
 
     expect(find.text(AppStrings.createFamilyPageTitle), findsOneWidget);
     expect(find.text(AppStrings.joinFamily), findsOneWidget);
+    expect(find.text(AppStrings.familyChat), findsNothing);
     expect(find.text(AppStrings.inviteParentAccount), findsNothing);
     expect(find.text(AppStrings.inviteChildAccount), findsNothing);
   });
@@ -151,12 +154,85 @@ void main() {
 
     expect(find.text(AppStrings.createFamilyPageTitle), findsNothing);
     expect(find.text(AppStrings.inviteParentAccount), findsNothing);
+    expect(find.text(AppStrings.familyChat), findsOneWidget);
     expect(find.text(AppStrings.inviteChildAccount), findsOneWidget);
+  });
+
+  testWidgets('opens family chat from parent home', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LoggedInHomeScreen(
+          userStream: Stream.value(_parentUser),
+          chatMessagesStream: Stream.value(const []),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text(AppStrings.familyChat));
+    await tester.pumpAndSettle();
+
+    expect(find.text('家族みんな'), findsOneWidget);
+    expect(find.text('メッセージを入力'), findsOneWidget);
+    expect(find.byTooltip('送信'), findsOneWidget);
+  });
+
+  testWidgets('shows read receipt on a message read by a family member', (
+    WidgetTester tester,
+  ) async {
+    final message = ChatMessage(
+      id: 'message-1',
+      senderUserId: _parentUser.uid,
+      senderDisplayName: _parentUser.displayName!,
+      text: 'おかえり',
+      readBy: {
+        _parentUser.uid: const ReadReceipt(displayName: '親', readAt: null),
+        _childUser.uid: const ReadReceipt(displayName: 'こども', readAt: null),
+      },
+      createdAt: DateTime(2026, 9, 3, 15, 1),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LoggedInHomeScreen(
+          userStream: Stream.value(_parentUser),
+          chatMessagesStream: Stream.value([message]),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.text(AppStrings.familyChat));
+    await tester.pumpAndSettle();
+
+    expect(find.text('おかえり'), findsOneWidget);
+    expect(find.text('こども既読'), findsOneWidget);
+  });
+
+  testWidgets('shows family chat instead of invite actions for child user', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LoggedInHomeScreen(
+          userStream: Stream.value(_childUser),
+          chatMessagesStream: Stream.value(const []),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('家族みんな'), findsOneWidget);
+    expect(find.text('メッセージを入力'), findsOneWidget);
+    expect(find.byTooltip('送信'), findsOneWidget);
+    expect(find.text(AppStrings.inviteParentAccount), findsNothing);
+    expect(find.text(AppStrings.inviteChildAccount), findsNothing);
   });
 
   testWidgets('opens parent invite screen route', (WidgetTester tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
         initialRoute: AppRoutes.inviteParent,
         onGenerateRoute: AppRouter.onGenerateRoute,
       ),
@@ -170,14 +246,15 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        initialRoute: '${AppRoutes.joinChildInvite}?token=test-token',
+      MaterialApp(
+        initialRoute:
+            '${AppRoutes.joinChildInvite}?token=test-token&familyName=${Uri.encodeComponent('なかよし家族')}',
         onGenerateRoute: AppRouter.onGenerateRoute,
       ),
     );
 
     expect(find.text(AppStrings.joinChildInvitePageTitle), findsWidgets);
-    expect(find.text(AppStrings.childInviteConfirmMessage), findsOneWidget);
+    expect(find.text('なかよし家族に参加しますか？'), findsOneWidget);
     expect(find.text(AppStrings.childDisplayName), findsOneWidget);
   });
 }
@@ -204,4 +281,12 @@ const _parentUser = AppUser(
   email: 'parent@example.com',
   familyId: 'family-1',
   role: AppUserRole.parent,
+);
+
+const _childUser = AppUser(
+  uid: 'child-user',
+  displayName: 'こども',
+  email: null,
+  familyId: 'family-1',
+  role: AppUserRole.child,
 );
