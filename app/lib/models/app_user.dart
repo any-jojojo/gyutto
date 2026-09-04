@@ -40,6 +40,8 @@ class AppUser {
     required this.email,
     required this.familyId,
     required this.role,
+    this.pendingFamilyId,
+    this.pendingJoinRequestStatus,
   });
 
   factory AppUser.fromFirebaseUser(User user, {AppUserRole? role}) {
@@ -49,6 +51,8 @@ class AppUser {
       email: user.email,
       familyId: null,
       role: role ?? AppUserRole.unknown,
+      pendingFamilyId: null,
+      pendingJoinRequestStatus: null,
     );
   }
 
@@ -59,6 +63,8 @@ class AppUser {
       email: json['email'] as String?,
       familyId: json['familyId'] as String?,
       role: AppUserRole.fromJson(json['role'] as String?),
+      pendingFamilyId: json['pendingFamilyId'] as String?,
+      pendingJoinRequestStatus: json['pendingJoinRequestStatus'] as String?,
     );
   }
 
@@ -67,6 +73,8 @@ class AppUser {
   final String? email;
   final String? familyId;
   final AppUserRole role;
+  final String? pendingFamilyId;
+  final String? pendingJoinRequestStatus;
 
   bool get isSignedIn {
     return uid.isNotEmpty;

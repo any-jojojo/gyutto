@@ -8,6 +8,7 @@ import '../../models/chat_message.dart';
 import '../../repositories/auth_repository.dart';
 import '../../repositories/user_repository.dart';
 import '../chat/presentation/family_chat_screen.dart';
+import '../family/presentation/join_request_review_screen.dart';
 
 class LoggedInHomeScreen extends StatefulWidget {
   const LoggedInHomeScreen({
@@ -57,6 +58,7 @@ class _LoggedInHomeScreenState extends State<LoggedInHomeScreen> {
       builder: (context, snapshot) {
         final appUser = snapshot.data;
         final hasFamily = appUser?.familyId?.isNotEmpty ?? false;
+        final hasPendingRequest = appUser?.pendingFamilyId?.isNotEmpty ?? false;
 
         if (hasFamily && appUser?.role == AppUserRole.child) {
           return FamilyChatScreen(
@@ -85,7 +87,7 @@ class _LoggedInHomeScreenState extends State<LoggedInHomeScreen> {
             child: SafeArea(
               child: Builder(
                 builder: (context) {
-                  final canCreateFamily = !hasFamily;
+                  final canCreateFamily = !hasFamily && !hasPendingRequest;
                   final canAddParent =
                       hasFamily && (appUser?.role.canAddParent ?? false);
                   final canAddChild =
@@ -116,6 +118,10 @@ class _LoggedInHomeScreenState extends State<LoggedInHomeScreen> {
                       Text(
                         hasFamily
                             ? AppStrings.loggedInHomeDescription
+                            : hasPendingRequest
+                            ? appUser?.pendingJoinRequestStatus == 'rejected'
+                                  ? '参加申請は拒否されました。新しい招待を家族管理者へ依頼してください。'
+                                  : '子アカウントの参加申請は承認待ちです。'
                             : AppStrings.noFamilyDescription,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -232,6 +238,23 @@ class _LoggedInHomeScreenState extends State<LoggedInHomeScreen> {
                               ),
                           ],
                         ),
+                      if (hasFamily &&
+                          appUser?.role == AppUserRole.familyAdmin) ...[
+                        const SizedBox(height: 14),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => JoinRequestReviewScreen(
+                                  familyId: appUser!.familyId!,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.approval_outlined),
+                          label: const Text('子アカウントの参加申請'),
+                        ),
+                      ],
                     ],
                   );
                 },

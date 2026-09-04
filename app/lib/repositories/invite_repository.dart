@@ -165,6 +165,7 @@ class InviteRepository {
       'role': AppUserRole.parent.toJson(),
       'status': 'active',
       'createdBy': userId,
+      'inviteId': inviteId,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -217,26 +218,29 @@ class InviteRepository {
       throw const InviteException('招待情報を確認できませんでした。');
     }
 
-    final childReference = _firestoreService.members(familyId).doc(userId);
+    final joinRequestReference = _firestoreService
+        .joinRequests(familyId)
+        .doc(userId);
     final inviteReference = _firestoreService.invites(familyId).doc(inviteId);
     final batch = FirebaseFirestore.instance.batch();
 
-    batch.set(childReference, {
-      'userId': childReference.id,
+    batch.set(joinRequestReference, {
+      'userId': userId,
       'displayName': displayName,
       'role': AppUserRole.child.toJson(),
-      'status': 'active',
-      'createdBy': userId,
+      'status': 'pending',
       'inviteId': inviteId,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
+      'tokenHash': tokenHash,
+      'requestedAt': FieldValue.serverTimestamp(),
+      'reviewedAt': null,
+      'reviewedBy': null,
     });
 
     batch.set(_firestoreService.user(userId), {
       'displayName': displayName,
       'email': null,
-      'familyId': familyId,
-      'role': AppUserRole.child.toJson(),
+      'pendingFamilyId': familyId,
+      'pendingJoinRequestStatus': 'pending',
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
@@ -244,16 +248,13 @@ class InviteRepository {
     batch.update(inviteReference, {
       'status': 'used',
       'usedAt': FieldValue.serverTimestamp(),
-      'usedBy': childReference.id,
+      'usedBy': userId,
     });
     batch.update(tokenReference, {'status': 'used'});
 
     await batch.commit();
 
-    return JoinChildInviteResult(
-      familyId: familyId,
-      childMemberId: childReference.id,
-    );
+    return JoinChildInviteResult(familyId: familyId, childMemberId: userId);
   }
 
   Future<CreateInviteResult> createInvite({

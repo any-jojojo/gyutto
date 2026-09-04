@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
-import '../../../core/router/app_routes.dart';
 import '../../../repositories/auth_repository.dart';
 import '../../../repositories/invite_repository.dart';
 
@@ -77,13 +76,9 @@ class _JoinChildInviteScreenState extends State<JoinChildInviteScreen> {
         return;
       }
 
-      if (!mounted) {
-        return;
-      }
-
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil(AppRoutes.loggedInHome, (route) => false);
+      setState(() {
+        _successMessage = '参加申請を送信しました。家族管理者の承認をお待ちください。';
+      });
     } on InviteException catch (error) {
       setState(() {
         _errorMessage = error.message;

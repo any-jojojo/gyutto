@@ -42,6 +42,10 @@ class FirebaseFirestoreService {
     return family(familyId).collection('messages');
   }
 
+  CollectionReference<Map<String, dynamic>> joinRequests(String familyId) {
+    return family(familyId).collection('joinRequests');
+  }
+
   CollectionReference<Map<String, dynamic>> passwordResetRequests(
     String familyId,
   ) {

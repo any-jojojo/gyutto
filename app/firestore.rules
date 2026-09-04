@@ -6,13 +6,49 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isFamilyMember(familyId) {
+      return signedIn()
+        && exists(
+          /databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)
+        );
+    }
+
+    function isFamilyAdmin(familyId) {
+      return isFamilyMember(familyId)
+        && get(
+          /databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)
+        ).data.role == 'familyAdmin';
+    }
+
+    function isCreatingOwnFamilyMembership(familyId, memberId) {
+      return signedIn()
+        && memberId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid
+        && getAfter(
+          /databases/$(database)/documents/families/$(familyId)
+        ).data.adminUserId == request.auth.uid;
+    }
+
+    function isJoiningWithInvite(familyId, memberId) {
+      let inviteId = request.resource.data.inviteId;
+      let invitePath = /databases/$(database)/documents/families/$(familyId)/invites/$(inviteId);
+      return signedIn()
+        && memberId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.role == 'parent'
+        && inviteId is string
+        && get(invitePath).data.status == 'active'
+        && getAfter(invitePath).data.status == 'used'
+        && getAfter(invitePath).data.usedBy == request.auth.uid;
+    }
+
     match /users/{userId} {
       allow read, write: if signedIn() && request.auth.uid == userId;
     }
 
     match /parentInviteCodes/{codeHash} {
       allow get: if signedIn();
-      allow create: if signedIn()
+      allow create: if isFamilyMember(request.resource.data.familyId)
         && request.resource.data.type == 'parentInvite'
         && request.resource.data.status == 'active';
       allow update: if signedIn()
@@ -23,49 +59,111 @@ service cloud.firestore {
 
     match /childInviteTokens/{tokenHash} {
       allow get: if signedIn();
-      allow create: if signedIn()
+      allow create: if isFamilyMember(request.resource.data.familyId)
         && request.resource.data.type == 'childQrInvite'
         && request.resource.data.status == 'active';
       allow update: if signedIn()
         && resource.data.status == 'active'
         && request.resource.data.status == 'used'
-        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['status']);
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['status'])
+        && getAfter(
+          /databases/$(database)/documents/families/$(resource.data.familyId)/joinRequests/$(request.auth.uid)
+        ).data.userId == request.auth.uid
+        && getAfter(
+          /databases/$(database)/documents/families/$(resource.data.familyId)/joinRequests/$(request.auth.uid)
+        ).data.inviteId == resource.data.inviteId
+        && getAfter(
+          /databases/$(database)/documents/families/$(resource.data.familyId)/joinRequests/$(request.auth.uid)
+        ).data.tokenHash == tokenHash
+        && getAfter(
+          /databases/$(database)/documents/families/$(resource.data.familyId)/joinRequests/$(request.auth.uid)
+        ).data.status == 'pending';
     }
 
     match /families/{familyId} {
       allow create: if signedIn()
         && request.resource.data.adminUserId == request.auth.uid;
 
-      allow read, update: if signedIn();
+      allow read, update: if isFamilyMember(familyId);
 
       match /members/{memberId} {
         allow create: if signedIn()
           && (
-            memberId == request.auth.uid
-            || (
-              request.resource.data.role == 'child'
-              && request.resource.data.createdBy == request.auth.uid
-              && request.resource.data.inviteId is string
-              && get(
-                /databases/$(database)/documents/families/$(familyId)/invites/$(request.resource.data.inviteId)
-              ).data.type == 'childQrInvite'
-              && get(
-                /databases/$(database)/documents/families/$(familyId)/invites/$(request.resource.data.inviteId)
-              ).data.status == 'active'
-            )
+            isCreatingOwnFamilyMembership(familyId, memberId)
+            || isJoiningWithInvite(familyId, memberId)
           );
-        allow read: if signedIn();
+        allow read: if isFamilyMember(familyId);
+        allow update, delete: if isFamilyMember(familyId);
       }
 
       match /messages/{messageId} {
-        allow read, create: if signedIn();
-        allow update: if signedIn()
+        allow read, create: if isFamilyMember(familyId);
+        allow update: if isFamilyMember(familyId)
           && request.resource.data.diff(resource.data).changedKeys().hasOnly(['readBy'])
           && request.resource.data.readBy.diff(resource.data.readBy).affectedKeys().hasOnly([request.auth.uid]);
       }
 
       match /invites/{inviteId} {
-        allow read, write: if signedIn();
+        allow get: if signedIn();
+        allow list, create, delete: if isFamilyMember(familyId);
+        allow update: if isFamilyMember(familyId)
+          || (
+            signedIn()
+            && resource.data.type == 'childQrInvite'
+            && resource.data.status == 'active'
+            && request.resource.data.status == 'used'
+            && request.resource.data.usedBy == request.auth.uid
+            && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+              'status',
+              'usedAt',
+              'usedBy'
+            ])
+            && getAfter(
+              /databases/$(database)/documents/families/$(familyId)/joinRequests/$(request.auth.uid)
+            ).data.inviteId == inviteId
+            && getAfter(
+              /databases/$(database)/documents/families/$(familyId)/joinRequests/$(request.auth.uid)
+            ).data.status == 'pending'
+          )
+          || (
+            signedIn()
+            && resource.data.type == 'parentInvite'
+            && resource.data.status == 'active'
+            && request.resource.data.status == 'used'
+            && request.resource.data.usedBy == request.auth.uid
+            && existsAfter(
+              /databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)
+            )
+          );
+      }
+
+      match /joinRequests/{userId} {
+        allow get: if signedIn()
+          && (request.auth.uid == userId || isFamilyAdmin(familyId));
+        allow list: if isFamilyAdmin(familyId);
+        allow create: if signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.role == 'child'
+          && request.resource.data.status == 'pending'
+          && request.resource.data.inviteId is string
+          && request.resource.data.tokenHash is string
+          && get(
+            /databases/$(database)/documents/families/$(familyId)/invites/$(request.resource.data.inviteId)
+          ).data.type == 'childQrInvite'
+          && get(
+            /databases/$(database)/documents/families/$(familyId)/invites/$(request.resource.data.inviteId)
+          ).data.status == 'active'
+          && get(
+            /databases/$(database)/documents/childInviteTokens/$(request.resource.data.tokenHash)
+          ).data.familyId == familyId
+          && get(
+            /databases/$(database)/documents/childInviteTokens/$(request.resource.data.tokenHash)
+          ).data.inviteId == request.resource.data.inviteId
+          && get(
+            /databases/$(database)/documents/childInviteTokens/$(request.resource.data.tokenHash)
+          ).data.status == 'active';
+        allow update, delete: if false;
       }
 
       match /passwordResetRequests/{requestId} {
