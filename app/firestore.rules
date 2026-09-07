@@ -31,17 +31,87 @@ service cloud.firestore {
 
     function isJoiningWithInvite(familyId, memberId) {
       let inviteId = request.resource.data.inviteId;
-      let invitePath = /databases/$(database)/documents/families/$(familyId)/invites/$(inviteId);
       return signedIn()
         && memberId == request.auth.uid
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.role == 'parent'
         && inviteId is string
-        && get(invitePath).data.status == 'active'
-        && getAfter(invitePath).data.status == 'used'
-        && getAfter(invitePath).data.usedBy == request.auth.uid;
+        && isConsumingParentInvite(familyId, inviteId);
     }
 
+    // All three documents must transition together in the same batch/transaction.
+    function isConsumingParentInvite(familyId, inviteId) {
+      let invitePath = /databases/$(database)/documents/families/$(familyId)/invites/$(inviteId);
+      let invite = get(invitePath).data;
+      let inviteAfter = getAfter(invitePath).data;
+      let codePath = /databases/$(database)/documents/parentInviteCodes/$(invite.codeHash);
+      let code = get(codePath).data;
+      let codeAfter = getAfter(codePath).data;
+      let memberPath = /databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid);
+      let memberAfter = getAfter(memberPath).data;
+      return signedIn()
+        && invite.type == 'parentInvite'
+        && invite.targetRole == 'parent'
+        && invite.codeHash is string
+        && invite.status == 'active'
+        && invite.expiresAt is timestamp
+        && request.time < invite.expiresAt
+        && code.type == 'parentInvite'
+        && code.targetRole == 'parent'
+        && code.familyId == familyId
+        && code.inviteId == inviteId
+        && code.status == 'active'
+        && code.expiresAt is timestamp
+        && code.expiresAt == invite.expiresAt
+        && request.time < code.expiresAt
+        && inviteAfter.status == 'used'
+        && inviteAfter.usedBy == request.auth.uid
+        && inviteAfter.diff(invite).affectedKeys().hasOnly(['status', 'usedAt', 'usedBy'])
+        && codeAfter.status == 'used'
+        && codeAfter.diff(code).affectedKeys().hasOnly(['status'])
+        && !exists(memberPath)
+        && memberAfter.userId == request.auth.uid
+        && memberAfter.role == 'parent'
+        && memberAfter.status == 'active'
+        && memberAfter.inviteId == inviteId;
+    }
+
+    function isConsumingChildInvite(familyId, inviteId, tokenHash) {
+      let invitePath = /databases/$(database)/documents/families/$(familyId)/invites/$(inviteId);
+      let invite = get(invitePath).data;
+      let inviteAfter = getAfter(invitePath).data;
+      let tokenPath = /databases/$(database)/documents/childInviteTokens/$(tokenHash);
+      let token = get(tokenPath).data;
+      let tokenAfter = getAfter(tokenPath).data;
+      let joinPath = /databases/$(database)/documents/families/$(familyId)/joinRequests/$(request.auth.uid);
+      let joinAfter = getAfter(joinPath).data;
+      return signedIn()
+        && invite.type == 'childQrInvite'
+        && invite.targetRole == 'child'
+        && invite.tokenHash == tokenHash
+        && invite.status == 'active'
+        && invite.expiresAt is timestamp
+        && request.time < invite.expiresAt
+        && token.type == 'childQrInvite'
+        && token.targetRole == 'child'
+        && token.familyId == familyId
+        && token.inviteId == inviteId
+        && token.status == 'active'
+        && token.expiresAt is timestamp
+        && request.time < token.expiresAt
+        && token.expiresAt == invite.expiresAt
+        && inviteAfter.status == 'used'
+        && inviteAfter.usedBy == request.auth.uid
+        && inviteAfter.diff(invite).affectedKeys().hasOnly(['status', 'usedAt', 'usedBy'])
+        && tokenAfter.status == 'used'
+        && tokenAfter.diff(token).affectedKeys().hasOnly(['status'])
+        && !exists(joinPath)
+        && joinAfter.userId == request.auth.uid
+        && joinAfter.role == 'child'
+        && joinAfter.status == 'pending'
+        && joinAfter.inviteId == inviteId
+        && joinAfter.tokenHash == tokenHash;
+    }
     match /users/{userId} {
       allow read, write: if signedIn() && request.auth.uid == userId;
     }
@@ -52,9 +122,8 @@ service cloud.firestore {
         && request.resource.data.type == 'parentInvite'
         && request.resource.data.status == 'active';
       allow update: if signedIn()
-        && resource.data.status == 'active'
-        && request.resource.data.status == 'used'
-        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['status']);
+        && get(/databases/$(database)/documents/families/$(resource.data.familyId)/invites/$(resource.data.inviteId)).data.codeHash == codeHash
+        && isConsumingParentInvite(resource.data.familyId, resource.data.inviteId);
     }
 
     match /childInviteTokens/{tokenHash} {
@@ -63,23 +132,8 @@ service cloud.firestore {
         && request.resource.data.type == 'childQrInvite'
         && request.resource.data.status == 'active';
       allow update: if signedIn()
-        && resource.data.status == 'active'
-        && request.resource.data.status == 'used'
-        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['status'])
-        && getAfter(
-          /databases/$(database)/documents/families/$(resource.data.familyId)/joinRequests/$(request.auth.uid)
-        ).data.userId == request.auth.uid
-        && getAfter(
-          /databases/$(database)/documents/families/$(resource.data.familyId)/joinRequests/$(request.auth.uid)
-        ).data.inviteId == resource.data.inviteId
-        && getAfter(
-          /databases/$(database)/documents/families/$(resource.data.familyId)/joinRequests/$(request.auth.uid)
-        ).data.tokenHash == tokenHash
-        && getAfter(
-          /databases/$(database)/documents/families/$(resource.data.familyId)/joinRequests/$(request.auth.uid)
-        ).data.status == 'pending';
+        && isConsumingChildInvite(resource.data.familyId, resource.data.inviteId, tokenHash);
     }
-
     match /families/{familyId} {
       allow create: if signedIn()
         && request.resource.data.adminUserId == request.auth.uid;
@@ -106,34 +160,15 @@ service cloud.firestore {
       match /invites/{inviteId} {
         allow get: if signedIn();
         allow list, create, delete: if isFamilyMember(familyId);
-        allow update: if isFamilyMember(familyId)
-          || (
+        allow update: if (
             signedIn()
             && resource.data.type == 'childQrInvite'
-            && resource.data.status == 'active'
-            && request.resource.data.status == 'used'
-            && request.resource.data.usedBy == request.auth.uid
-            && request.resource.data.diff(resource.data).changedKeys().hasOnly([
-              'status',
-              'usedAt',
-              'usedBy'
-            ])
-            && getAfter(
-              /databases/$(database)/documents/families/$(familyId)/joinRequests/$(request.auth.uid)
-            ).data.inviteId == inviteId
-            && getAfter(
-              /databases/$(database)/documents/families/$(familyId)/joinRequests/$(request.auth.uid)
-            ).data.status == 'pending'
+            && isConsumingChildInvite(familyId, inviteId, resource.data.tokenHash)
           )
           || (
             signedIn()
             && resource.data.type == 'parentInvite'
-            && resource.data.status == 'active'
-            && request.resource.data.status == 'used'
-            && request.resource.data.usedBy == request.auth.uid
-            && existsAfter(
-              /databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)
-            )
+            && isConsumingParentInvite(familyId, inviteId)
           );
       }
 
@@ -148,21 +183,7 @@ service cloud.firestore {
           && request.resource.data.status == 'pending'
           && request.resource.data.inviteId is string
           && request.resource.data.tokenHash is string
-          && get(
-            /databases/$(database)/documents/families/$(familyId)/invites/$(request.resource.data.inviteId)
-          ).data.type == 'childQrInvite'
-          && get(
-            /databases/$(database)/documents/families/$(familyId)/invites/$(request.resource.data.inviteId)
-          ).data.status == 'active'
-          && get(
-            /databases/$(database)/documents/childInviteTokens/$(request.resource.data.tokenHash)
-          ).data.familyId == familyId
-          && get(
-            /databases/$(database)/documents/childInviteTokens/$(request.resource.data.tokenHash)
-          ).data.inviteId == request.resource.data.inviteId
-          && get(
-            /databases/$(database)/documents/childInviteTokens/$(request.resource.data.tokenHash)
-          ).data.status == 'active';
+          && isConsumingChildInvite(familyId, request.resource.data.inviteId, request.resource.data.tokenHash);
         allow update, delete: if false;
       }
 

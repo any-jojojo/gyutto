@@ -28,7 +28,15 @@ async function main() {
       await db.doc('families/family-b/messages/message-1').set({ text: 'secret' });
       await db.doc('families/family-b/invites/valid-invite').set({
         type: 'parentInvite',
+        targetRole: 'parent',
+        codeHash: 'valid-code',
+        expiresAt: new Date('2099-01-01T00:00:00Z'),
         status: 'active',
+      });
+      await db.doc('parentInviteCodes/valid-code').set({
+        familyId: 'family-b', inviteId: 'valid-invite',
+        type: 'parentInvite', targetRole: 'parent', status: 'active',
+        expiresAt: new Date('2099-01-01T00:00:00Z'),
       });
       await db.doc('families/family-b/invites/used-invite').set({
         type: 'parentInvite',
@@ -37,10 +45,13 @@ async function main() {
       });
       await db.doc('families/family-b/invites/child-invite').set({
         type: 'childQrInvite', status: 'active',
+        targetRole: 'child', tokenHash: 'child-token-hash',
+        expiresAt: new Date('2099-01-01T00:00:00Z'),
       });
       await db.doc('childInviteTokens/child-token-hash').set({
         familyId: 'family-b', inviteId: 'child-invite',
         type: 'childQrInvite', status: 'active',
+        targetRole: 'child', expiresAt: new Date('2099-01-01T00:00:00Z'),
       });
     });
 
@@ -68,6 +79,9 @@ async function main() {
         inviteId,
       });
       batch.update(invite, { status: 'used', usedBy });
+      if (inviteId === 'valid-invite') {
+        batch.update(mallory.doc('parentInviteCodes/valid-code'), { status: 'used' });
+      }
       return batch.commit();
     }
 

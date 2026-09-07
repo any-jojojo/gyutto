@@ -1,0 +1,218 @@
+{
+  "testedAt": "2026-09-07T07:10:35.304Z",
+  "scope": "local Firestore emulator; repository rules only",
+  "results": [
+    {
+      "name": "same-family read",
+      "expected": "allowed",
+      "actual": "allowed",
+      "pass": true
+    },
+    {
+      "name": "same-family post",
+      "expected": "allowed",
+      "actual": "allowed",
+      "pass": true
+    },
+    {
+      "name": "cross-family read",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "cross-family list",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "cross-family post",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "cross-family update",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "cross-family delete",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "unauthenticated read",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "unauthenticated list",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "unauthenticated post",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "unauthenticated update",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "unauthenticated delete",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "forged own user profile cannot grant membership",
+      "expected": "allowed",
+      "actual": "allowed",
+      "pass": true
+    },
+    {
+      "name": "chat denied after profile forgery",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "outsider cannot create invite",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "missing invite",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "used parent invite",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "valid parent invite",
+      "expected": "allowed",
+      "actual": "allowed",
+      "pass": true
+    },
+    {
+      "name": "expired parent invite",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "parent join without code index consumption",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "chat after bypassing parent code",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "child invite must not grant parent membership",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "valid child pending request",
+      "expected": "allowed",
+      "actual": "allowed",
+      "pass": true
+    },
+    {
+      "name": "pending child cannot read chat",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "pending child cannot post chat",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "reused child invite",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "expired child invite",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "tampered token",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "tampered family",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "child request must consume token atomically",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    },
+    {
+      "name": "second request with unconsumed token",
+      "expected": "denied",
+      "actual": "denied",
+      "pass": true,
+      "error": "permission-denied"
+    }
+  ]
+}

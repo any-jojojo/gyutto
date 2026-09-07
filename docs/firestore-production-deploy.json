@@ -1,0 +1,8 @@
+﻿{
+    "completedAtUtc":  "2026-09-07T07:13:54.9229738Z",
+    "log":  "app/firestore-production-deploy.log",
+    "sha256":  "86005A70FAC3BDC0D64D0D61F92D5338C2B3AEC6C3647DB2192F56460D817CEF",
+    "result":  "Firebase CLI exit 0; compiled successfully; released to cloud.firestore; Deploy complete",
+    "target":  "firestore:rules",
+    "project":  "gyutto-cb454"
+}
