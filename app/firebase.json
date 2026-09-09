@@ -16,7 +16,7 @@
       "android": {
         "default": {
           "projectId": "gyutto-cb454",
-          "appId": "1:203913354696:android:bdd808f1498256e12234fd",
+          "appId": "1:203913354696:android:7fdb3f0e4c0b365b2234fd",
           "fileOutput": "android/app/google-services.json"
         }
       },
@@ -24,7 +24,7 @@
         "lib/firebase_options.dart": {
           "projectId": "gyutto-cb454",
           "configurations": {
-            "android": "1:203913354696:android:bdd808f1498256e12234fd",
+            "android": "1:203913354696:android:7fdb3f0e4c0b365b2234fd",
             "ios": "1:203913354696:ios:f9bf775b7952282c2234fd",
             "web": "1:203913354696:web:11ea25bf4419bee22234fd"
           }

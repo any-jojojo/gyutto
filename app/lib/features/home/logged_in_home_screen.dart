@@ -9,6 +9,7 @@ import '../../repositories/auth_repository.dart';
 import '../../repositories/user_repository.dart';
 import '../chat/presentation/family_chat_screen.dart';
 import '../family/presentation/join_request_review_screen.dart';
+import '../settings/settings_screen.dart';
 
 class LoggedInHomeScreen extends StatefulWidget {
   const LoggedInHomeScreen({
@@ -68,7 +69,10 @@ class _LoggedInHomeScreenState extends State<LoggedInHomeScreen> {
         }
 
         return Scaffold(
-          appBar: AppBar(title: const Text(AppStrings.appName)),
+          appBar: AppBar(
+            title: const Text(AppStrings.appName),
+            actions: const [SettingsButton()],
+          ),
           body: DecoratedBox(
             decoration: const BoxDecoration(
               gradient: LinearGradient(

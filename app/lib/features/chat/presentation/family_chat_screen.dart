@@ -6,6 +6,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../models/app_user.dart';
 import '../../../models/chat_message.dart';
 import '../../../repositories/chat_repository.dart';
+import '../../settings/settings_screen.dart';
 
 class FamilyChatScreen extends StatefulWidget {
   const FamilyChatScreen({
@@ -102,6 +103,7 @@ class _FamilyChatScreenState extends State<FamilyChatScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F5F7),
       appBar: AppBar(
+        actions: const [SettingsButton()],
         centerTitle: true,
         title: const Column(
           children: [

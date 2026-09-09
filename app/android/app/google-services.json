@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:203913354696:android:bdd808f1498256e12234fd",
+        "mobilesdk_app_id": "1:203913354696:android:857d5d62d81c4ee72234fd",
         "android_client_info": {
-          "package_name": "jp.gyutto.app"
+          "package_name": "com.example.gyutto"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "203913354696-2i58tcr6c27vts0h4djvbfnbc5uonh44.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBAN30jTfFsvJDxi5hYa_A7HtDpaZWU5lA"
@@ -20,7 +25,91 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "203913354696-2i58tcr6c27vts0h4djvbfnbc5uonh44.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "203913354696-4okjn744b7oo9em97meafkktldha17hq.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.gyutto"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:203913354696:android:7fdb3f0e4c0b365b2234fd",
+        "android_client_info": {
+          "package_name": "com.gyutto"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "203913354696-2i58tcr6c27vts0h4djvbfnbc5uonh44.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAN30jTfFsvJDxi5hYa_A7HtDpaZWU5lA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "203913354696-2i58tcr6c27vts0h4djvbfnbc5uonh44.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "203913354696-4okjn744b7oo9em97meafkktldha17hq.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.gyutto"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:203913354696:android:bdd808f1498256e12234fd",
+        "android_client_info": {
+          "package_name": "jp.gyutto.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "203913354696-2i58tcr6c27vts0h4djvbfnbc5uonh44.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAN30jTfFsvJDxi5hYa_A7HtDpaZWU5lA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "203913354696-2i58tcr6c27vts0h4djvbfnbc5uonh44.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "203913354696-4okjn744b7oo9em97meafkktldha17hq.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.gyutto"
+              }
+            }
+          ]
         }
       }
     }

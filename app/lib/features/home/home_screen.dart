@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/router/app_routes.dart';
+import '../settings/settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -10,7 +11,10 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.appName)),
+      appBar: AppBar(
+        title: const Text(AppStrings.appName),
+        actions: const [SettingsButton()],
+      ),
       body: _HomeBackground(
         child: SafeArea(
           child: ListView(
