@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-const accountDeletionUrl =
-    'https://gyutto-account-deletion.any-jojojo.chatgpt.site/';
-const accountDeletionEmail = 'anyprogramming@gmail.com';
+const accountDeletionUrl = 'https://gyutto-cb454.web.app/';
+const accountDeletionEmail = 'gyutto.delete@gmail.com';
 
 class SettingsButton extends StatelessWidget {
   const SettingsButton({super.key});
