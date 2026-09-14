@@ -37,7 +37,7 @@ void main() {
     ];
     final screens = <String, Widget>{
       '01-family-chat': FamilyChatScreen(user: user, messagesStream: Stream.value(messages)),
-      '02-family-home': LoggedInHomeScreen(userStream: Stream.value(user)),
+      '02-family-home': LoggedInHomeScreen(joinRequestsStream: Stream.value(const []), userStream: Stream.value(user)),
       '03-welcome': const HomeScreen(),
     };
     final out = Directory('../assets/store/google-play/ja-JP/phone');

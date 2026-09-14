@@ -5,11 +5,13 @@ import '../../core/constants/app_strings.dart';
 import '../../core/router/app_routes.dart';
 import '../../models/app_user.dart';
 import '../../models/chat_message.dart';
+import '../../models/join_request.dart';
 import '../../repositories/auth_repository.dart';
 import '../../repositories/user_repository.dart';
 import '../chat/presentation/family_chat_screen.dart';
 import '../family/presentation/join_request_review_screen.dart';
 import '../settings/settings_screen.dart';
+import 'pending_child_join_requests.dart';
 
 class LoggedInHomeScreen extends StatefulWidget {
   const LoggedInHomeScreen({
@@ -18,12 +20,19 @@ class LoggedInHomeScreen extends StatefulWidget {
     this.userRepository,
     this.userStream,
     this.chatMessagesStream,
+    this.notice,
+    this.joinRequestsStream,
+    this.approveJoinRequest,
   });
 
   final AuthRepository? authRepository;
   final UserRepository? userRepository;
   final Stream<AppUser?>? userStream;
   final Stream<List<ChatMessage>>? chatMessagesStream;
+  final String? notice;
+  final Stream<List<JoinRequest>>? joinRequestsStream;
+  final Future<void> Function(String familyId, String userId)?
+  approveJoinRequest;
 
   @override
   State<LoggedInHomeScreen> createState() {
@@ -100,6 +109,33 @@ class _LoggedInHomeScreenState extends State<LoggedInHomeScreen> {
                   return ListView(
                     padding: const EdgeInsets.all(24),
                     children: [
+                      if (canAddChild)
+                        PendingChildJoinRequests(
+                          key: ValueKey('${appUser!.uid}:${appUser.familyId}'),
+                          familyId: appUser.familyId!,
+                          requestsStream: widget.joinRequestsStream,
+                          approveRequest: widget.approveJoinRequest,
+                        ),
+                      if (widget.notice != null)
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.check_circle_outline),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    widget.notice!,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 48),
                       Center(
                         child: Image.asset(
@@ -242,8 +278,7 @@ class _LoggedInHomeScreenState extends State<LoggedInHomeScreen> {
                               ),
                           ],
                         ),
-                      if (hasFamily &&
-                          appUser?.role == AppUserRole.familyAdmin) ...[
+                      if (canAddChild) ...[
                         const SizedBox(height: 14),
                         OutlinedButton.icon(
                           onPressed: () {

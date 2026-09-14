@@ -20,6 +20,16 @@ service cloud.firestore {
         ).data.role == 'familyAdmin';
     }
 
+    function canReviewChildJoinRequest(familyId) {
+      return isFamilyMember(familyId)
+        && get(
+          /databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)
+        ).data.role in ['familyAdmin', 'parent']
+        && get(
+          /databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)
+        ).data.status == 'active';
+    }
+
     function isCreatingOwnFamilyMembership(familyId, memberId) {
       return signedIn()
         && memberId == request.auth.uid
@@ -174,8 +184,8 @@ service cloud.firestore {
 
       match /joinRequests/{userId} {
         allow get: if signedIn()
-          && (request.auth.uid == userId || isFamilyAdmin(familyId));
-        allow list: if isFamilyAdmin(familyId);
+          && (request.auth.uid == userId || canReviewChildJoinRequest(familyId));
+        allow list: if canReviewChildJoinRequest(familyId);
         allow create: if signedIn()
           && request.auth.uid == userId
           && request.resource.data.userId == request.auth.uid

@@ -7,7 +7,10 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../repositories/auth_repository.dart';
 import '../../../repositories/invite_repository.dart';
+import '../../../repositories/join_request_repository.dart';
 import '../../../repositories/user_repository.dart';
+import '../../home/logged_in_home_screen.dart';
+import 'child_join_approval_button.dart';
 
 class InviteChildQrScreen extends StatefulWidget {
   const InviteChildQrScreen({
@@ -29,6 +32,7 @@ class InviteChildQrScreen extends StatefulWidget {
 
 class _InviteChildQrScreenState extends State<InviteChildQrScreen> {
   CreateInviteResult? _invite;
+  String? _familyId;
   var _isSubmitting = false;
   String? _errorMessage;
 
@@ -72,6 +76,7 @@ class _InviteChildQrScreenState extends State<InviteChildQrScreen> {
 
       setState(() {
         _invite = invite;
+        _familyId = familyId;
       });
     } on FirebaseException catch (error) {
       setState(() {
@@ -166,6 +171,25 @@ class _InviteChildQrScreenState extends State<InviteChildQrScreen> {
                   ),
                 )
               else ...[
+                const Text(
+                  '子どもが参加を申請したら、下のボタンで参加を許可してください。承認後に家族チャットを利用できます。',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                ChildJoinApprovalButton(
+                  approve: () => JoinRequestRepository().approveForInvite(
+                    familyId: _familyId!,
+                    inviteId: invite.inviteId,
+                  ),
+                  onApproved: () => Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          const LoggedInHomeScreen(notice: 'こども参加申請を許可しました！'),
+                    ),
+                    (_) => false,
+                  ),
+                ),
+                const SizedBox(height: 20),
                 Center(
                   child: DecoratedBox(
                     decoration: BoxDecoration(

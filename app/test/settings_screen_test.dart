@@ -57,6 +57,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: LoggedInHomeScreen(
+            joinRequestsStream: Stream.value(const []),
             userStream: Stream.value(user),
             chatMessagesStream: Stream<List<ChatMessage>>.value([]),
           ),

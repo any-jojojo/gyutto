@@ -39,12 +39,12 @@ exports.reviewChildJoinRequest = onCall(async (request) => {
 
     if (
       !reviewerSnapshot.exists ||
-      reviewerSnapshot.get('role') !== 'familyAdmin' ||
+      !['familyAdmin', 'parent'].includes(reviewerSnapshot.get('role')) ||
       reviewerSnapshot.get('status') !== 'active'
     ) {
       throw new HttpsError(
         'permission-denied',
-        '家族管理者だけが申請を処理できます。',
+        '家族管理者または親だけが申請を処理できます。',
       );
     }
     if (

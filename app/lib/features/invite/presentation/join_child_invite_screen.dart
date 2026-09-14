@@ -5,6 +5,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../repositories/auth_repository.dart';
 import '../../../repositories/invite_repository.dart';
+import '../../home/logged_in_home_screen.dart';
 
 class JoinChildInviteScreen extends StatefulWidget {
   const JoinChildInviteScreen({
@@ -42,6 +43,7 @@ class _JoinChildInviteScreenState extends State<JoinChildInviteScreen> {
   }
 
   Future<void> _joinFamily() async {
+    if (_isSubmitting || _successMessage != null) return;
     final formState = _formKey.currentState;
     if (!_accepted || formState == null || !formState.validate()) {
       return;
@@ -77,8 +79,12 @@ class _JoinChildInviteScreenState extends State<JoinChildInviteScreen> {
       }
 
       setState(() {
-        _successMessage = '参加申請を送信しました。家族管理者の承認をお待ちください。';
+        _successMessage = '参加申請を送信しました。親の承認をお待ちください。';
       });
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => const LoggedInHomeScreen()),
+        (_) => false,
+      );
     } on InviteException catch (error) {
       setState(() {
         _errorMessage = error.message;

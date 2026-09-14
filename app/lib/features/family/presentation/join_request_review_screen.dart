@@ -21,12 +21,14 @@ class JoinRequestReviewScreen extends StatefulWidget {
 
 class _JoinRequestReviewScreenState extends State<JoinRequestReviewScreen> {
   late final JoinRequestRepository _repository;
+  late final Stream<List<JoinRequest>> _requestsStream;
   String? _processingUserId;
 
   @override
   void initState() {
     super.initState();
     _repository = widget.repository ?? JoinRequestRepository();
+    _requestsStream = _repository.watchPending(widget.familyId);
   }
 
   Future<void> _review(JoinRequest request, bool approve) async {
@@ -37,6 +39,11 @@ class _JoinRequestReviewScreenState extends State<JoinRequestReviewScreen> {
         userId: request.userId,
         approve: approve,
       );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(approve ? '参加を承認しました。' : '参加申請を拒否しました。')),
+        );
+      }
     } on FirebaseFunctionsException catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -53,7 +60,7 @@ class _JoinRequestReviewScreenState extends State<JoinRequestReviewScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('子アカウントの参加申請')),
       body: StreamBuilder<List<JoinRequest>>(
-        stream: _repository.watchPending(widget.familyId),
+        stream: _requestsStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return const Center(child: Text('参加申請を読み込めませんでした。'));
@@ -71,7 +78,7 @@ class _JoinRequestReviewScreenState extends State<JoinRequestReviewScreen> {
             separatorBuilder: (_, _) => const Divider(),
             itemBuilder: (context, index) {
               final request = requests[index];
-              final processing = _processingUserId == request.userId;
+              final processing = _processingUserId != null;
               return ListTile(
                 leading: const CircleAvatar(child: Icon(Icons.child_care)),
                 title: Text(request.displayName),

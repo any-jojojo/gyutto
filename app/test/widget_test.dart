@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gyutto/app.dart';
@@ -9,6 +11,55 @@ import 'package:gyutto/models/app_user.dart';
 import 'package:gyutto/models/chat_message.dart';
 
 void main() {
+  testWidgets('parent can access child join requests', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LoggedInHomeScreen(
+          joinRequestsStream: Stream.value(const []),
+          userStream: Stream.value(_parentUser),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.scrollUntilVisible(find.text('子アカウントの参加申請'), 200);
+    expect(find.text('子アカウントの参加申請'), findsOneWidget);
+  });
+
+  testWidgets('pending child cannot chat until approval arrives', (
+    tester,
+  ) async {
+    final users = StreamController<AppUser?>();
+    addTearDown(users.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LoggedInHomeScreen(
+          joinRequestsStream: Stream.value(const []),
+          userStream: users.stream,
+          chatMessagesStream: Stream.value(const []),
+        ),
+      ),
+    );
+    users.add(
+      const AppUser(
+        uid: 'child-user',
+        displayName: 'こども',
+        email: null,
+        familyId: null,
+        role: AppUserRole.unknown,
+        pendingFamilyId: 'family-1',
+        pendingJoinRequestStatus: 'pending',
+      ),
+    );
+    await tester.pump();
+    expect(find.text('子アカウントの参加申請は承認待ちです。'), findsOneWidget);
+    expect(find.text('メッセージを入力'), findsNothing);
+    expect(find.text('子アカウントの参加申請'), findsNothing);
+    users.add(_childUser);
+    await tester.pumpAndSettle();
+    expect(find.text('メッセージを入力'), findsOneWidget);
+    expect(find.text('子アカウントの参加申請は承認待ちです。'), findsNothing);
+  });
+
   testWidgets('shows initial home screen', (WidgetTester tester) async {
     await tester.pumpWidget(const GyuttoApp());
 
@@ -48,7 +99,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         onGenerateRoute: AppRouter.onGenerateRoute,
-        home: LoggedInHomeScreen(userStream: Stream.value(_familyAdminUser)),
+        home: LoggedInHomeScreen(
+          joinRequestsStream: Stream.value(const []),
+          userStream: Stream.value(_familyAdminUser),
+        ),
       ),
     );
     await tester.pump();
@@ -67,7 +121,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         onGenerateRoute: AppRouter.onGenerateRoute,
-        home: LoggedInHomeScreen(userStream: Stream.value(_userWithoutFamily)),
+        home: LoggedInHomeScreen(
+          joinRequestsStream: Stream.value(const []),
+          userStream: Stream.value(_userWithoutFamily),
+        ),
       ),
     );
     await tester.pump();
@@ -85,7 +142,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         onGenerateRoute: AppRouter.onGenerateRoute,
-        home: LoggedInHomeScreen(userStream: Stream.value(_userWithoutFamily)),
+        home: LoggedInHomeScreen(
+          joinRequestsStream: Stream.value(const []),
+          userStream: Stream.value(_userWithoutFamily),
+        ),
       ),
     );
     await tester.pump();
@@ -103,7 +163,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         onGenerateRoute: AppRouter.onGenerateRoute,
-        home: LoggedInHomeScreen(userStream: Stream.value(_userWithoutFamily)),
+        home: LoggedInHomeScreen(
+          joinRequestsStream: Stream.value(const []),
+          userStream: Stream.value(_userWithoutFamily),
+        ),
       ),
     );
     await tester.pump();
@@ -121,7 +184,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         onGenerateRoute: AppRouter.onGenerateRoute,
-        home: LoggedInHomeScreen(userStream: Stream.value(_familyAdminUser)),
+        home: LoggedInHomeScreen(
+          joinRequestsStream: Stream.value(const []),
+          userStream: Stream.value(_familyAdminUser),
+        ),
       ),
     );
     await tester.pump();
@@ -147,7 +213,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         onGenerateRoute: AppRouter.onGenerateRoute,
-        home: LoggedInHomeScreen(userStream: Stream.value(_parentUser)),
+        home: LoggedInHomeScreen(
+          joinRequestsStream: Stream.value(const []),
+          userStream: Stream.value(_parentUser),
+        ),
       ),
     );
     await tester.pump();
@@ -164,6 +233,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: LoggedInHomeScreen(
+          joinRequestsStream: Stream.value(const []),
           userStream: Stream.value(_parentUser),
           chatMessagesStream: Stream.value(const []),
         ),
@@ -197,6 +267,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: LoggedInHomeScreen(
+          joinRequestsStream: Stream.value(const []),
           userStream: Stream.value(_parentUser),
           chatMessagesStream: Stream.value([message]),
         ),
@@ -216,6 +287,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: LoggedInHomeScreen(
+          joinRequestsStream: Stream.value(const []),
           userStream: Stream.value(_childUser),
           chatMessagesStream: Stream.value(const []),
         ),
