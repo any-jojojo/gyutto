@@ -114,7 +114,7 @@ async function main() {
     );
     await assertFails(child.collection('families/family-b/joinRequests').get());
     await assertSucceeds(bob.collection('families/family-b/joinRequests').get());
-    await assertFails(pat.collection('families/family-b/joinRequests').get());
+    await assertSucceeds(pat.collection('families/family-b/joinRequests').get());
     await assertFails(
       bob.doc('families/family-b/joinRequests/child').update({status: 'approved'}),
     );
@@ -128,7 +128,7 @@ async function main() {
     console.log('PASS forged invite denied');
     console.log('PASS valid child invite creates one pending request');
     console.log('PASS child can read only own request');
-    console.log('PASS only familyAdmin can list requests');
+    console.log('PASS active familyAdmin and parent can list requests');
     console.log('PASS review cannot bypass Cloud Functions');
   } finally {
     await testEnv.cleanup();

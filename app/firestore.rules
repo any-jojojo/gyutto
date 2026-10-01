@@ -10,7 +10,17 @@ service cloud.firestore {
       return signedIn()
         && exists(
           /databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)
-        );
+        )
+        && get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.status == 'active';
+    }
+
+    function validOwnReadReceipt(familyId) {
+      let receipt = request.resource.data.readBy[request.auth.uid];
+      return receipt is map
+        && receipt.keys().hasAll(['displayName', 'readAt'])
+        && receipt.keys().hasOnly(['displayName', 'readAt'])
+        && receipt.displayName == get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.displayName
+        && receipt.readAt == request.time;
     }
 
     function isFamilyAdmin(familyId) {
@@ -32,8 +42,11 @@ service cloud.firestore {
 
     function isCreatingOwnFamilyMembership(familyId, memberId) {
       return signedIn()
+        && !exists(/databases/$(database)/documents/families/$(familyId))
         && memberId == request.auth.uid
         && request.resource.data.userId == request.auth.uid
+        && request.resource.data.role == 'familyAdmin'
+        && request.resource.data.status == 'active'
         && getAfter(
           /databases/$(database)/documents/families/$(familyId)
         ).data.adminUserId == request.auth.uid;
@@ -128,7 +141,7 @@ service cloud.firestore {
 
     match /parentInviteCodes/{codeHash} {
       allow get: if signedIn();
-      allow create: if isFamilyMember(request.resource.data.familyId)
+      allow create: if isFamilyAdmin(request.resource.data.familyId)
         && request.resource.data.type == 'parentInvite'
         && request.resource.data.status == 'active';
       allow update: if signedIn()
@@ -138,7 +151,7 @@ service cloud.firestore {
 
     match /childInviteTokens/{tokenHash} {
       allow get: if signedIn();
-      allow create: if isFamilyMember(request.resource.data.familyId)
+      allow create: if canReviewChildJoinRequest(request.resource.data.familyId)
         && request.resource.data.type == 'childQrInvite'
         && request.resource.data.status == 'active';
       allow update: if signedIn()
@@ -148,7 +161,10 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.adminUserId == request.auth.uid;
 
-      allow read, update: if isFamilyMember(familyId);
+      allow read: if isFamilyMember(familyId);
+      // Changing the owner requires a separate, trusted transfer operation.
+      allow update: if canReviewChildJoinRequest(familyId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'updatedAt']);
 
       match /members/{memberId} {
         allow create: if signedIn()
@@ -157,19 +173,46 @@ service cloud.firestore {
             || isJoiningWithInvite(familyId, memberId)
           );
         allow read: if isFamilyMember(familyId);
-        allow update, delete: if isFamilyMember(familyId);
+        allow update: if canReviewChildJoinRequest(familyId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'role', 'status', 'updatedAt'])
+          && request.resource.data.role in ['familyAdmin', 'parent', 'child']
+          && request.resource.data.status in ['active', 'invited', 'disabled', 'suspended']
+          && (memberId != get(/databases/$(database)/documents/families/$(familyId)).data.adminUserId
+            || (request.resource.data.role == 'familyAdmin' && request.resource.data.status == 'active'));
+        allow delete: if canReviewChildJoinRequest(familyId)
+          && memberId != get(/databases/$(database)/documents/families/$(familyId)).data.adminUserId;
       }
 
       match /messages/{messageId} {
-        allow read, create: if isFamilyMember(familyId);
+        allow read: if isFamilyMember(familyId);
+        allow create: if isFamilyMember(familyId)
+          && request.resource.data.keys().hasAll(['senderUserId', 'senderDisplayName', 'text', 'readBy', 'createdAt'])
+          && request.resource.data.keys().hasOnly(['senderUserId', 'senderDisplayName', 'text', 'readBy', 'createdAt'])
+          && request.resource.data.senderUserId == request.auth.uid
+          && request.resource.data.senderDisplayName == get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.displayName
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.readBy is map
+          && request.resource.data.readBy.keys().hasOnly([request.auth.uid])
+          && validOwnReadReceipt(familyId);
         allow update: if isFamilyMember(familyId)
-          && request.resource.data.diff(resource.data).changedKeys().hasOnly(['readBy'])
-          && request.resource.data.readBy.diff(resource.data.readBy).affectedKeys().hasOnly([request.auth.uid]);
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy'])
+          && request.resource.data.readBy is map
+          && request.resource.data.readBy.diff(resource.data.readBy).affectedKeys().hasOnly([request.auth.uid])
+          && validOwnReadReceipt(familyId);
       }
 
       match /invites/{inviteId} {
         allow get: if signedIn();
-        allow list, create, delete: if isFamilyMember(familyId);
+        allow list: if canReviewChildJoinRequest(familyId);
+        allow create: if request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.status == 'active'
+          && ((request.resource.data.type == 'parentInvite'
+              && request.resource.data.targetRole == 'parent' && isFamilyAdmin(familyId))
+            || (request.resource.data.type == 'childQrInvite'
+              && request.resource.data.targetRole == 'child' && canReviewChildJoinRequest(familyId)));
+        allow delete: if canReviewChildJoinRequest(familyId);
         allow update: if (
             signedIn()
             && resource.data.type == 'childQrInvite'
@@ -198,7 +241,10 @@ service cloud.firestore {
       }
 
       match /passwordResetRequests/{requestId} {
-        allow read, write: if signedIn();
+        allow read: if canReviewChildJoinRequest(familyId)
+          || (isFamilyMember(familyId) && resource.data.childUserId == request.auth.uid);
+        // Approval/status transitions are reserved for trusted server code.
+        allow write: if false;
       }
     }
   }
