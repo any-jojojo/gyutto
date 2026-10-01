@@ -99,3 +99,5 @@ exports.reviewChildJoinRequest = onCall(async (request) => {
 
   return {status: decision};
 });
+
+Object.assign(exports, require('./chat-safety'));

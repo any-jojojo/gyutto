@@ -15,6 +15,9 @@ const stamp = () => firebase.firestore.FieldValue.serverTimestamp();
   for(const [uid,role,status] of [['admin','familyAdmin','active'],['parent','parent','active'],['child','child','active'],['disabled','child','disabled'],['suspended','parent','suspended'],['other','parent','active']]){
    await db.doc(`families/${uid==='other'?'g':'f'}/members/${uid}`).set({userId:uid,role,status,displayName:uid});
   }
+  for (const uid of ['admin','parent','child']) {
+   await db.doc('families/f/chatAccess/'+uid).set({safetyVersion:1,adultVersion:1,permission:'allowed',permissionVersion:1});
+  }
   await db.doc('families/f/messages/m').set({senderUserId:'admin',senderDisplayName:'admin',text:'hello',createdAt:new Date(),readBy:{}});
   await db.doc('families/f/passwordResetRequests/r').set({childUserId:'child',status:'pending'});
   await db.doc('families/f/joinRequests/applicant').set({userId:'applicant',role:'child',status:'pending'});

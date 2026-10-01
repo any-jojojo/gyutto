@@ -14,6 +14,16 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.status == 'active';
     }
 
+    // Missing consent records fail closed, including for existing accounts.
+    function canUseChat(familyId) {
+      let access = get(/databases/$(database)/documents/families/$(familyId)/chatAccess/$(request.auth.uid)).data;
+      let role = get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.role;
+      return isFamilyMember(familyId)
+        && access.safetyVersion == 1
+        && ((role == 'child' && access.permission == 'allowed' && access.permissionVersion == 1)
+          || (role in ['familyAdmin', 'parent'] && access.adultVersion == 1));
+    }
+
     function validOwnReadReceipt(familyId) {
       let receipt = request.resource.data.readBy[request.auth.uid];
       return receipt is map
@@ -172,7 +182,7 @@ service cloud.firestore {
             isCreatingOwnFamilyMembership(familyId, memberId)
             || isJoiningWithInvite(familyId, memberId)
           );
-        allow read: if isFamilyMember(familyId);
+        allow read: if isFamilyMember(familyId) || (signedIn() && request.auth.uid == memberId);
         allow update: if canReviewChildJoinRequest(familyId)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'role', 'status', 'updatedAt'])
           && request.resource.data.role in ['familyAdmin', 'parent', 'child']
@@ -183,9 +193,18 @@ service cloud.firestore {
           && memberId != get(/databases/$(database)/documents/families/$(familyId)).data.adminUserId;
       }
 
+      match /chatAccess/{userId} {
+        allow read: if (signedIn() && request.auth.uid == userId) || canReviewChildJoinRequest(familyId);
+        allow write: if false;
+      }
+      match /chatSafetyEvents/{eventId} {
+        allow read: if canReviewChildJoinRequest(familyId);
+        allow write: if false;
+      }
+
       match /messages/{messageId} {
-        allow read: if isFamilyMember(familyId);
-        allow create: if isFamilyMember(familyId)
+        allow read: if canUseChat(familyId);
+        allow create: if canUseChat(familyId)
           && request.resource.data.keys().hasAll(['senderUserId', 'senderDisplayName', 'text', 'readBy', 'createdAt'])
           && request.resource.data.keys().hasOnly(['senderUserId', 'senderDisplayName', 'text', 'readBy', 'createdAt'])
           && request.resource.data.senderUserId == request.auth.uid
@@ -196,7 +215,7 @@ service cloud.firestore {
           && request.resource.data.readBy is map
           && request.resource.data.readBy.keys().hasOnly([request.auth.uid])
           && validOwnReadReceipt(familyId);
-        allow update: if isFamilyMember(familyId)
+        allow update: if canUseChat(familyId)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy'])
           && request.resource.data.readBy is map
           && request.resource.data.readBy.diff(resource.data.readBy).affectedKeys().hasOnly([request.auth.uid])

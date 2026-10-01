@@ -1,3 +1,4 @@
+import 'package:gyutto/models/chat_safety_state.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -36,7 +37,7 @@ void main() {
       ChatMessage(id: '1', senderUserId: 'demo-mother', senderDisplayName: 'お母さん', text: 'おかえり。おやつは冷蔵庫にあるよ。', readBy: reads, createdAt: now.subtract(const Duration(minutes: 10))),
     ];
     final screens = <String, Widget>{
-      '01-family-chat': FamilyChatScreen(user: user, messagesStream: Stream.value(messages)),
+      '01-family-chat': FamilyChatScreen(user: user, safetyStateStream: Stream.value(const ChatSafetyState(role: 'child', active: true, safetyAccepted: true, permission: 'allowed', serverVerified: true)), messagesStream: Stream.value(messages)),
       '02-family-home': LoggedInHomeScreen(joinRequestsStream: Stream.value(const []), userStream: Stream.value(user)),
       '03-welcome': const HomeScreen(),
     };

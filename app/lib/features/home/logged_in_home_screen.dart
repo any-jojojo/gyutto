@@ -12,6 +12,8 @@ import '../chat/presentation/family_chat_screen.dart';
 import '../family/presentation/join_request_review_screen.dart';
 import '../settings/settings_screen.dart';
 import 'pending_child_join_requests.dart';
+import '../safety/child_chat_controls_screen.dart';
+import '../../models/chat_safety_state.dart';
 
 class LoggedInHomeScreen extends StatefulWidget {
   const LoggedInHomeScreen({
@@ -20,6 +22,7 @@ class LoggedInHomeScreen extends StatefulWidget {
     this.userRepository,
     this.userStream,
     this.chatMessagesStream,
+    this.chatSafetyStateStream,
     this.notice,
     this.joinRequestsStream,
     this.approveJoinRequest,
@@ -29,6 +32,7 @@ class LoggedInHomeScreen extends StatefulWidget {
   final UserRepository? userRepository;
   final Stream<AppUser?>? userStream;
   final Stream<List<ChatMessage>>? chatMessagesStream;
+  final Stream<ChatSafetyState>? chatSafetyStateStream;
   final String? notice;
   final Stream<List<JoinRequest>>? joinRequestsStream;
   final Future<void> Function(String familyId, String userId)?
@@ -74,6 +78,7 @@ class _LoggedInHomeScreenState extends State<LoggedInHomeScreen> {
           return FamilyChatScreen(
             user: appUser!,
             messagesStream: widget.chatMessagesStream,
+            safetyStateStream: widget.chatSafetyStateStream,
           );
         }
 
@@ -220,6 +225,8 @@ class _LoggedInHomeScreenState extends State<LoggedInHomeScreen> {
                                 builder: (_) => FamilyChatScreen(
                                   user: appUser!,
                                   messagesStream: widget.chatMessagesStream,
+                                  safetyStateStream:
+                                      widget.chatSafetyStateStream,
                                 ),
                               ),
                             );
@@ -279,6 +286,17 @@ class _LoggedInHomeScreenState extends State<LoggedInHomeScreen> {
                           ],
                         ),
                       if (canAddChild) ...[
+                        const SizedBox(height: 14),
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.security_outlined),
+                          label: const Text('??????????'),
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  ChildChatControlsScreen(user: appUser!),
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 14),
                         OutlinedButton.icon(
                           onPressed: () {

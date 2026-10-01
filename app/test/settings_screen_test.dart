@@ -1,3 +1,4 @@
+import 'package:gyutto/models/chat_safety_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gyutto/features/settings/settings_screen.dart';
@@ -59,6 +60,15 @@ void main() {
           home: LoggedInHomeScreen(
             joinRequestsStream: Stream.value(const []),
             userStream: Stream.value(user),
+            chatSafetyStateStream: Stream.value(
+              const ChatSafetyState(
+                role: 'child',
+                active: true,
+                safetyAccepted: true,
+                permission: 'allowed',
+                serverVerified: true,
+              ),
+            ),
             chatMessagesStream: Stream<List<ChatMessage>>.value([]),
           ),
         ),

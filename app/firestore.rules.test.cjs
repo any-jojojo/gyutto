@@ -25,6 +25,7 @@ async function main() {
       await db.doc('families/family-b/members/pat').set({
         userId: 'pat', role: 'parent', status: 'active',
       });
+      await db.doc('families/family-b/chatAccess/bob').set({safetyVersion:1,adultVersion:1});
       await db.doc('families/family-b/messages/message-1').set({ text: 'secret' });
       await db.doc('families/family-b/invites/valid-invite').set({
         type: 'parentInvite',

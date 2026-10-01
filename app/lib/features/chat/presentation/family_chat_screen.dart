@@ -7,10 +7,36 @@ import '../../../models/app_user.dart';
 import '../../../models/chat_message.dart';
 import '../../../repositories/chat_repository.dart';
 import '../../settings/settings_screen.dart';
+import '../../safety/chat_safety_gate.dart';
+import '../../../models/chat_safety_state.dart';
 
-class FamilyChatScreen extends StatefulWidget {
+class FamilyChatScreen extends StatelessWidget {
   const FamilyChatScreen({
     super.key,
+    required this.user,
+    this.chatRepository,
+    this.messagesStream,
+    this.safetyStateStream,
+  });
+  final AppUser user;
+  final ChatRepository? chatRepository;
+  final Stream<List<ChatMessage>>? messagesStream;
+  final Stream<ChatSafetyState>? safetyStateStream;
+  @override
+  Widget build(BuildContext context) => ChatSafetyGate(
+    key: ValueKey((user.familyId, user.uid)),
+    user: user,
+    stateStream: safetyStateStream,
+    builder: (_) => _FamilyChatContent(
+      user: user,
+      chatRepository: chatRepository,
+      messagesStream: messagesStream,
+    ),
+  );
+}
+
+class _FamilyChatContent extends StatefulWidget {
+  const _FamilyChatContent({
     required this.user,
     this.chatRepository,
     this.messagesStream,
@@ -21,10 +47,10 @@ class FamilyChatScreen extends StatefulWidget {
   final Stream<List<ChatMessage>>? messagesStream;
 
   @override
-  State<FamilyChatScreen> createState() => _FamilyChatScreenState();
+  State<_FamilyChatContent> createState() => __FamilyChatContentState();
 }
 
-class _FamilyChatScreenState extends State<FamilyChatScreen> {
+class __FamilyChatContentState extends State<_FamilyChatContent> {
   final _messageController = TextEditingController();
   late final ChatRepository? _chatRepository;
   late final Stream<List<ChatMessage>> _messagesStream;

@@ -1,3 +1,4 @@
+import 'package:gyutto/models/chat_safety_state.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -35,6 +36,15 @@ void main() {
         home: LoggedInHomeScreen(
           joinRequestsStream: Stream.value(const []),
           userStream: users.stream,
+          chatSafetyStateStream: Stream.value(
+            const ChatSafetyState(
+              role: 'child',
+              active: true,
+              safetyAccepted: true,
+              permission: 'allowed',
+              serverVerified: true,
+            ),
+          ),
           chatMessagesStream: Stream.value(const []),
         ),
       ),
@@ -235,6 +245,15 @@ void main() {
         home: LoggedInHomeScreen(
           joinRequestsStream: Stream.value(const []),
           userStream: Stream.value(_parentUser),
+          chatSafetyStateStream: Stream.value(
+            const ChatSafetyState(
+              role: 'child',
+              active: true,
+              safetyAccepted: true,
+              permission: 'allowed',
+              serverVerified: true,
+            ),
+          ),
           chatMessagesStream: Stream.value(const []),
         ),
       ),
@@ -269,6 +288,15 @@ void main() {
         home: LoggedInHomeScreen(
           joinRequestsStream: Stream.value(const []),
           userStream: Stream.value(_parentUser),
+          chatSafetyStateStream: Stream.value(
+            const ChatSafetyState(
+              role: 'child',
+              active: true,
+              safetyAccepted: true,
+              permission: 'allowed',
+              serverVerified: true,
+            ),
+          ),
           chatMessagesStream: Stream.value([message]),
         ),
       ),
@@ -289,11 +317,20 @@ void main() {
         home: LoggedInHomeScreen(
           joinRequestsStream: Stream.value(const []),
           userStream: Stream.value(_childUser),
+          chatSafetyStateStream: Stream.value(
+            const ChatSafetyState(
+              role: 'child',
+              active: true,
+              safetyAccepted: true,
+              permission: 'allowed',
+              serverVerified: true,
+            ),
+          ),
           chatMessagesStream: Stream.value(const []),
         ),
       ),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('家族みんな'), findsOneWidget);
     expect(find.text('メッセージを入力'), findsOneWidget);

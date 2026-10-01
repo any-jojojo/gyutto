@@ -8,15 +8,15 @@
   "emulators": {
     "firestore": {
       "host": "127.0.0.1",
-      "port": 8697
+      "port": 9297
     },
     "auth": {
       "host": "127.0.0.1",
-      "port": 9298
+      "port": 9398
     },
     "functions": {
       "host": "127.0.0.1",
-      "port": 5209
+      "port": 5309
     },
     "ui": {
       "enabled": false

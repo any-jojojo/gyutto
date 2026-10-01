@@ -1,3 +1,4 @@
+import 'package:gyutto/models/chat_safety_state.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -77,6 +78,15 @@ void main() {
         home: LoggedInHomeScreen(
           userStream: Stream.value(user(AppUserRole.child)),
           joinRequestsStream: Stream.value([requestA]),
+          chatSafetyStateStream: Stream.value(
+            const ChatSafetyState(
+              role: 'child',
+              active: true,
+              safetyAccepted: true,
+              permission: 'allowed',
+              serverVerified: true,
+            ),
+          ),
           chatMessagesStream: Stream.value(const []),
         ),
       ),
