@@ -36,3 +36,48 @@ Firestore Emulator（架空データ、gyutto-rules-test、127.0.0.1:8397）で�
 本番反映後に管理APIでルールの完全一致を確認。実端末での確認は未実施。既存の不正データ・侵害履歴の調査や、アプリ全体の安全性監査を完了したという意味ではない。
 
 取得記録とログは `app/build/production-audit/permissions-deployed.json`、`permissions-test.log`、`permissions-deploy.log`（build配下のためcleanで消える）。
+
+## コミット後の再検証（2026-10-01）
+
+修正を `5be7c2f` にコミットした後、以下を再実行して成功。
+
+- Flutter analyze: No issues found。
+- Flutter test: 29件成功。
+- Firestore回帰テスト一式: 新規49項目、親招待26ケース、子ども招待27ケース、既存ルール・参加承認閲覧権限テスト成功。
+- Functions単体テスト: 8件成功。
+- Auth + Firestore + Functions Emulator統合テスト: 15項目成功。本番と同じNode.js 22（ローカル22.23.3）でも再実行して成功。
+
+統合テストは `demo-gyutto-flow` の架空ユーザーで、メール登録・再ログイン、匿名子ども登録、家族作成、親招待参加、親による子ども招待、参加申請、実際のcallable Functionによる親の承認・管理者の拒否、管理者/親/子どものチャット投稿・読取・既読、利用停止・再開を確認。承認待ち・家族外のチャット閲覧、家族外の承認、子どもの自己昇格は拒否される。
+
+再実行（Node.js 22を利用）：
+
+```powershell
+cd app
+npm.cmd run test:rules:all
+npm.cmd run test:flow
+flutter analyze
+flutter test
+```
+
+端末の標準Nodeが24の場合、統合テストは以下でも実行できる。
+
+```powershell
+npx.cmd --yes --package=node@22 node node_modules/firebase-tools/lib/bin/firebase.js emulators:exec --config firebase.flow-test.json --only auth,firestore,functions --project demo-gyutto-flow "node firebase.flow.test.cjs"
+```
+
+初回の回帰テスト再起動は前回Emulatorのポート競合で失敗したため、再検証のみ8597番ポートを使用。Flutterの画面キャプチャテストが生成したストア画像の差分は取り消した。
+
+### 本番との照合
+
+2026-10-01 11:01 JSTに管理APIから取得。
+
+- Firestore: 上記rulesetが適用済みで、コミット済み `firestore.rules` とバイト単位で完全一致。
+- Functions: `us-central1/reviewChildJoinRequest` はACTIVE、runtime=nodejs22。
+- Functionsのデプロイ済みソースZIP（generation=1789351544508233）を取得し、`index.js`、`package.json`、`package-lock.json`がローカルとバイト単位で完全一致。
+- `index.js` SHA256: `9764fc8688504b9a86b73d793618d1f64ac0a3c0590143bc1c46b8dab9985702`
+- 本番はすでに検証済み内容と一致しているため、今回の再検証で再デプロイは行っていない。
+
+実端末・本番アカウントでの操作テストは行っていない。統合テストはアプリと同じFirebase操作をSDKから実行し、画面操作はFlutterテストで別途確認。本番Auth設定・IAM等すべての構成がEmulatorと同一であるという保証ではない。
+
+取得結果: `app/build/production-audit/post-commit-production.json`
+ログ: 同ディレクトリの `post-commit-rules.log`、`post-commit-analyze.log`、`post-commit-flutter-test.log`、`full-flow-node22.log`。
