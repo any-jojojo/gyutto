@@ -31,7 +31,7 @@ require('firebase/compat/firestore');
     ]) {
       await env.withSecurityRulesDisabled(async c => {
         const ref = c.firestore().doc('families/f/chatAccess/child');
-        if (data) await ref.set(data); else await ref.delete();
+        if (data) await ref.set({...data,postingTermsVersion:1}); else await ref.delete();
       });
       const check = allowed ? assertSucceeds : assertFails;
       await check(child.doc('families/f/messages/m').get());

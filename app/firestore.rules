@@ -205,6 +205,7 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow read: if canUseChat(familyId);
         allow create: if canUseChat(familyId)
+          && get(/databases/$(database)/documents/families/$(familyId)/chatAccess/$(request.auth.uid)).data.postingTermsVersion == 1
           && request.resource.data.keys().hasAll(['senderUserId', 'senderDisplayName', 'text', 'readBy', 'createdAt'])
           && request.resource.data.keys().hasOnly(['senderUserId', 'senderDisplayName', 'text', 'readBy', 'createdAt'])
           && request.resource.data.senderUserId == request.auth.uid

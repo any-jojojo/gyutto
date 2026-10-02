@@ -9,6 +9,8 @@ import '../../../repositories/chat_repository.dart';
 import '../../settings/settings_screen.dart';
 import '../../safety/chat_safety_gate.dart';
 import '../../../models/chat_safety_state.dart';
+import '../../safety/posting_safety.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FamilyChatScreen extends StatelessWidget {
   const FamilyChatScreen({
@@ -80,6 +82,14 @@ class __FamilyChatContentState extends State<_FamilyChatContent> {
 
     setState(() => _isSending = true);
     try {
+      if (!await ensurePostingConsent(
+        context,
+        widget.user.familyId!,
+        widget.user.uid,
+      )) {
+        return;
+      }
+      if (!mounted) return;
       await (_chatRepository ?? ChatRepository()).sendMessage(
         familyId: widget.user.familyId!,
         senderUserId: widget.user.uid,
@@ -129,7 +139,64 @@ class __FamilyChatContentState extends State<_FamilyChatContent> {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F5F7),
       appBar: AppBar(
-        actions: const [SettingsButton()],
+        actions: [
+          IconButton(
+            tooltip: 'ユーザーを通報',
+            icon: const Icon(Icons.flag_outlined),
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('通報するユーザー'),
+                content: SizedBox(
+                  width: 320,
+                  height: 320,
+                  child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: FirebaseFirestore.instance
+                        .collection('families/${widget.user.familyId}/members')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) return const Text('読み込めませんでした。');
+                      if (!snapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final members = snapshot.data!.docs
+                          .where((d) => d.id != widget.user.uid)
+                          .toList();
+                      return ListView(
+                        children: members
+                            .map(
+                              (d) => ListTile(
+                                title: Text(
+                                  d.data()['displayName'] as String? ?? 'メンバー',
+                                ),
+                                trailing: const Icon(Icons.flag_outlined),
+                                onTap: () {
+                                  Navigator.pop(dialogContext);
+                                  showReport(
+                                    this.context,
+                                    widget.user.familyId!,
+                                    'user',
+                                    d.id,
+                                  );
+                                },
+                              ),
+                            )
+                            .toList(),
+                      );
+                    },
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: const Text('閉じる'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SettingsButton(),
+        ],
         centerTitle: true,
         title: const Column(
           children: [
@@ -174,6 +241,12 @@ class __FamilyChatContentState extends State<_FamilyChatContent> {
                       return _MessageBubble(
                         message: message,
                         isMine: message.senderUserId == widget.user.uid,
+                        onReport: (kind) => showReport(
+                          context,
+                          widget.user.familyId!,
+                          kind,
+                          kind == 'message' ? message.id : message.senderUserId,
+                        ),
                       );
                     },
                   );
@@ -193,7 +266,12 @@ class __FamilyChatContentState extends State<_FamilyChatContent> {
 }
 
 class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({required this.message, required this.isMine});
+  const _MessageBubble({
+    required this.message,
+    required this.isMine,
+    required this.onReport,
+  });
+  final void Function(String) onReport;
 
   final ChatMessage message;
   final bool isMine;
@@ -215,6 +293,15 @@ class _MessageBubble extends StatelessWidget {
               ? CrossAxisAlignment.end
               : CrossAxisAlignment.start,
           children: [
+            if (!isMine)
+              PopupMenuButton<String>(
+                tooltip: '投稿・ユーザーを通報',
+                onSelected: onReport,
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'message', child: Text('投稿を通報')),
+                  PopupMenuItem(value: 'user', child: Text('ユーザーを通報')),
+                ],
+              ),
             if (!isMine)
               Padding(
                 padding: const EdgeInsets.only(left: 8, bottom: 4),

@@ -20,7 +20,7 @@ function fixture(role = 'parent', status = 'active', pending = 'pending') {
     constructor(code, message) { super(message); this.code = code; }
   }
   const sandbox = {exports: {}, require: name => {
-    if (name === './chat-safety') return {};
+      if (name === './chat-safety' || name === './moderation') return {};
     if (name === 'firebase-functions/v2/https') return {onCall: callback => callback, HttpsError};
     if (name === 'firebase-admin/app') return {initializeApp() {}};
     if (name === 'firebase-admin/firestore') return {

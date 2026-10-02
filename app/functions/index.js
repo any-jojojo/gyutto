@@ -101,3 +101,5 @@ exports.reviewChildJoinRequest = onCall(async (request) => {
 });
 
 Object.assign(exports, require('./chat-safety'));
+
+Object.assign(exports, require('./moderation'));

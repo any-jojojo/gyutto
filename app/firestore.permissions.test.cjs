@@ -16,7 +16,7 @@ const stamp = () => firebase.firestore.FieldValue.serverTimestamp();
    await db.doc(`families/${uid==='other'?'g':'f'}/members/${uid}`).set({userId:uid,role,status,displayName:uid});
   }
   for (const uid of ['admin','parent','child']) {
-   await db.doc('families/f/chatAccess/'+uid).set({safetyVersion:1,adultVersion:1,permission:'allowed',permissionVersion:1});
+   await db.doc('families/f/chatAccess/'+uid).set({postingTermsVersion:1,safetyVersion:1,adultVersion:1,permission:'allowed',permissionVersion:1});
   }
   await db.doc('families/f/messages/m').set({senderUserId:'admin',senderDisplayName:'admin',text:'hello',createdAt:new Date(),readBy:{}});
   await db.doc('families/f/passwordResetRequests/r').set({childUserId:'child',status:'pending'});
