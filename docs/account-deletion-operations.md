@@ -20,7 +20,7 @@
 - users/{uid} と families/{familyId}/members/{uid}。
 - families 配下 messages の本人の投稿（senderUserId）と、他者投稿内の本人の readBy エントリ。
 - families 配下 invites / joinRequests / passwordResetRequests に含まれる本人情報。createdBy・userId・childUserId・requestedBy・approvedBy などの参照も確認。
-- families??chatAccess????????????????????????????permissionUpdatedBy????chatSafetyEvents?childUserId/changedBy????????????????????????????????????????????
+- families 配下 chatAccess の本人の安全確認・成人確認・利用許可記録、他者記録内の permissionUpdatedBy、chatSafetyEvents の childUserId / changedBy など。
 - parentInviteCodes / childInviteTokens の対応する招待情報。
 - families の createdBy などの本人参照。残る管理者との関係やアプリ動作を確認して更新。
 - ユーザーが過去に所属・申請した別の家族も対象に含め、現在の familyId だけで調査を終えない。
@@ -34,3 +34,7 @@ Firestore の親ドキュメント削除ではサブコレクションは消え�
 ## 次回リリース
 
 アプリ内で本人確認と申請が完結する仕組みを追加します。今回はアプリの設定から上記 Web ページへ移動します。
+
+## 2026-10-02 の実行検証
+
+詳細は [削除検証報告](account-deletion-verification-2026-10-02.md) を参照。個人削除のエミュレーター検証を実施。本番操作、メール本人確認、家族全体の削除、ログ・バックアップ・端末キャッシュの消去は別途検証する。削除中の古いトークンを止める accountDeletions と、その後の一時記録消去を手順に追加。新しいRules・承認Functionsは未デプロイのため、現時点の本番でこの保護が有効とは扱わない。

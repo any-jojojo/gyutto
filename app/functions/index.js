@@ -32,10 +32,16 @@ exports.reviewChildJoinRequest = onCall(async (request) => {
   const userRef = db.doc(`users/${childUserId}`);
 
   await db.runTransaction(async (transaction) => {
-    const [reviewerSnapshot, joinRequestSnapshot] = await Promise.all([
+    const [reviewerSnapshot, joinRequestSnapshot, reviewerDeletion, childDeletion] = await Promise.all([
       transaction.get(reviewerRef),
       transaction.get(requestRef),
+      transaction.get(db.doc(`accountDeletions/${reviewerId}`)),
+      transaction.get(db.doc(`accountDeletions/${childUserId}`)),
     ]);
+
+    if (reviewerDeletion.exists || childDeletion.exists) {
+      throw new HttpsError('permission-denied', '削除処理中のアカウントは承認できません。');
+    }
 
     if (
       !reviewerSnapshot.exists ||

@@ -7,6 +7,42 @@ import 'package:gyutto/models/app_user.dart';
 import 'package:gyutto/models/chat_message.dart';
 
 void main() {
+  testWidgets('opens direct privacy policy URL', (tester) async {
+    Uri? opened;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SettingsScreen(
+          openPage: (uri) async {
+            opened = uri;
+            return true;
+          },
+        ),
+      ),
+    );
+    await tester.tap(find.text('プライバシーポリシー'));
+    await tester.pumpAndSettle();
+    expect(opened.toString(), privacyPolicyUrl);
+  });
+  for (final throwsError in [false, true]) {
+    testWidgets('policy URL remains available on launch failure $throwsError', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SettingsScreen(
+            openPage: (_) async {
+              if (throwsError) throw StateError('No browser');
+              return false;
+            },
+          ),
+        ),
+      );
+      await tester.tap(find.text('プライバシーポリシー'));
+      await tester.pumpAndSettle();
+      expect(find.text('ポリシーを開けませんでした'), findsOneWidget);
+      expect(find.text(privacyPolicyUrl), findsOneWidget);
+    });
+  }
   testWidgets('opens only the deletion page when requested', (tester) async {
     Uri? opened;
     await tester.pumpWidget(

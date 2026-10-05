@@ -1,0 +1,27 @@
+# Android起動画面で停止する症状の調査
+
+## 続報：ビルド4のAndroidプラグイン登録欠落
+
+ビルド4でFirebase初期化エラーとurl_launcherによる外部ブラウザー起動失敗が併発する画像を受領。公開用worktreeの `android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java` が存在しないこと、releaseのR8 usage.txtでFlutterFirebaseCorePluginとUrlLauncherPluginが削除対象になっていることを確認した。
+
+公開用worktreeでのflutter pub getはWindows用プラグインのシンボリックリンク作成で失敗していた。その後の検証・`build --no-pub` を停止せずに続けたため、Androidの登録コードがないAABを生成してしまった。WidgetテストはFirebaseやURL起動を差し替えており、この欠落を検出しなかった。前回の起動エラー表示追加は症状の可視化で、原因解消ではなかった。
+
+対策：公開用worktree内のwindowsディレクトリを一時退避し、flutter pub get --offlineを正常完了させた後、finallyでwindowsを戻した。Androidプラグイン5件の登録生成を確認。MainActivityからGeneratedPluginRegistrantを直接参照して一度だけ登録するよう変更し、生成が欠落した場合はコンパイル失敗にする。候補版は1.0.0+5。通報等の保留機能は除外を維持。
+
+今後は準備コマンドの終了コードを必ず確認し、失敗した場合に後続ビルドを続けない。AABの生成成功・署名確認・WidgetテストだけをAndroidネイティブプラグインの動作確認の代わりにしない。
+
+ビルド5の検証結果：release AAB生成成功（51.9MB）、jarsignerによる署名検証成功。R8 mappingとAAB内DEXのclass_defを照合し、GeneratedPluginRegistrant、FlutterFirebaseCorePlugin（v4.d）、UrlLauncherPlugin（a5.j）の実クラス収録を確認した。versionCode=5、minSdk=24、targetSdk=36、ABIはarmeabi-v7a / arm64-v8a / x86_64で維持。接続端末・利用可能なAVDがないため、Android実機でのFirebase初期化とブラウザー起動は未検証。
+
+配布ファイル：`app/build/app/outputs/bundle/release/app-release-v5.aab`。SHA-256：`2D7F0FC3D332ABF3E196126A9C1E98B6C1442C7F687F99A83C8882BC27F45DD4`。Play Consoleへのアップロードは未実施。
+
+以下は当初の調査記録。
+
+ユーザー提供画像では、黒い背景にFlutterのランチャーアイコンが表示され、ホーム画面へ進まない。Androidの起動画面から最初のFlutterフレームへ進んでいないと考えられるが、端末ログがなく根本原因は未確定。端末はmotorola edge 40 neo（XT2307-3）、Android 15とユーザーから確認済み。
+
+ビルド3のmainはFirebase.initializeAppの完了後にrunAppを呼んでおり、初期化失敗・長時間待機時の表示がなかった。mainで先にStartupScreenを表示し、初期化完了後にGyuttoAppへ切り替える。20秒のタイムアウト、エラー案内、再試行を追加。タイムアウトしても処理中の初期化を重複実行しない。
+
+検証：初期化待機・成功、失敗後再試行、タイムアウト後再試行のWidgetテスト。公開用構成で設定画面のテストと合わせて11件成功、flutter analyze成功。FirebaseのAndroid App IDはcom.gyuttoのgoogle-services.jsonと一致。端末での改善は未検証。
+
+公開用チェックアウトはgyutto-release-20261002。保留中の投稿規約・通報機能は引き続き除外し、ポリシーリンクと安全機能を維持する。候補版は1.0.0+4。Play Consoleへのアップロードは行わない。
+
+候補版でもFlutterロゴのままなら、Dart側のタイムアウト表示まで到達していない可能性があり、Androidの起動ログ・Flutterエンジンの描画ログが必要。表示されるようになっても初期化エラーになる場合は、Firebase初期化の端末ログを調べる。画像だけでGPUやネットワークを原因と断定しない。

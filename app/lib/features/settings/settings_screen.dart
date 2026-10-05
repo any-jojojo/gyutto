@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 const accountDeletionUrl = 'https://gyutto-cb454.web.app/';
 const accountDeletionEmail = 'gyutto.delete@gmail.com';
+const privacyPolicyUrl = 'https://gyutto-cb454.web.app/privacy-policy';
 
 class SettingsButton extends StatelessWidget {
   const SettingsButton({super.key});
@@ -22,6 +23,41 @@ class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, this.openPage});
 
   final Future<bool> Function(Uri)? openPage;
+
+  Future<void> _openPolicy(BuildContext context) async {
+    var opened = false;
+    try {
+      final uri = Uri.parse(privacyPolicyUrl);
+      opened =
+          await (openPage?.call(uri) ??
+              launchUrl(uri, mode: LaunchMode.externalApplication));
+    } catch (_) {
+      // The direct URL remains available when no browser can open it.
+    }
+    if (opened || !context.mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('ポリシーを開けませんでした'),
+        content: const SelectableText(privacyPolicyUrl),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await Clipboard.setData(
+                const ClipboardData(text: privacyPolicyUrl),
+              );
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
+            },
+            child: const Text('URLをコピー'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('閉じる'),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _requestDeletion(BuildContext context) async {
     var opened = false;
@@ -78,6 +114,17 @@ class SettingsScreen extends StatelessWidget {
     body: ListView(
       padding: const EdgeInsets.all(20),
       children: [
+        Card(
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(16),
+            leading: const Icon(Icons.privacy_tip_outlined),
+            title: const Text('プライバシーポリシー'),
+            subtitle: const Text('収集する情報、利用目的、共有範囲、削除について'),
+            trailing: const Icon(Icons.open_in_new),
+            onTap: () => _openPolicy(context),
+          ),
+        ),
+        const SizedBox(height: 16),
         Text('アカウント', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 16),
         Card(

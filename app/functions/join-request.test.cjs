@@ -3,13 +3,13 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const {test} = require('node:test');
 
-function fixture(role = 'parent', status = 'active', pending = 'pending') {
+function fixture(role = 'parent', status = 'active', pending = 'pending', deleting = null) {
   const writes = [];
   const requestData = {role: 'child', status: pending, userId: 'child', displayName: 'Child', inviteId: 'invite'};
   const db = {
     doc: path => path,
     runTransaction: async callback => callback({
-      get: async path => ({exists: role !== 'outsider', get: key =>
+      get: async path => ({exists: path.startsWith('accountDeletions/') ? path === 'accountDeletions/'+deleting : role !== 'outsider', get: key =>
         path.endsWith('/members/reviewer') ? ({role, status})[key] : requestData[key]}),
       update: (...args) => writes.push(['update', ...args]),
       create: (...args) => writes.push(['create', ...args]),
@@ -33,6 +33,13 @@ function fixture(role = 'parent', status = 'active', pending = 'pending') {
   return {review: sandbox.exports.reviewChildJoinRequest, writes};
 }
 const request = decision => ({auth: {uid: 'reviewer'}, data: {familyId: 'family', userId: 'child', decision}});
+for (const uid of ['reviewer','child']) {
+  test('deleting '+uid+' cannot approve or regain membership', async()=>{
+    const {review,writes}=fixture('parent','active','pending',uid);
+    await assert.rejects(review(request('approved')), e=>e.code==='permission-denied');
+    assert.equal(writes.length,0);
+  });
+}
 for (const role of ['parent', 'familyAdmin']) {
   test(`${role} can approve and activate child`, async () => {
     const {review, writes} = fixture(role);

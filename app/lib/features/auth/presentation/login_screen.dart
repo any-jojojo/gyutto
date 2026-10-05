@@ -5,6 +5,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../repositories/auth_repository.dart';
+import '../../settings/settings_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.authRepository});
@@ -119,7 +120,10 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_pageTitle)),
+      appBar: AppBar(
+        title: Text(_pageTitle),
+        actions: const [SettingsButton()],
+      ),
       body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(

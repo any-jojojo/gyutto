@@ -7,7 +7,8 @@
     "test:rules:child-invite": "firebase emulators:exec --config firebase.parent-invite-test.json --only firestore --project gyutto-rules-test \"node child-invite.rules.test.cjs\"",
     "test:rules:all": "firebase emulators:exec --config firebase.permissions-test.json --only firestore --project gyutto-rules-test \"node firestore.all-rules.test.cjs\"",
     "test:flow": "firebase emulators:exec --config firebase.flow-test.json --only auth,firestore,functions --project demo-gyutto-flow \"node firebase.flow.test.cjs\"",
-    "test:safety": "firebase emulators:exec --config firebase.flow-test.json --only auth,firestore,functions --project demo-gyutto-flow \"node firebase.safety-suite.cjs\""
+    "test:safety": "firebase emulators:exec --config firebase.flow-test.json --only auth,firestore,functions --project demo-gyutto-flow \"node firebase.safety-suite.cjs\"",
+    "test:deletion": "firebase emulators:exec --config firebase.deletion-test.json --only auth,firestore --project demo-gyutto-deletion \"node scripts/deletion-suite.cjs\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.0",
