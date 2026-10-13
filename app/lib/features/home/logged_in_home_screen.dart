@@ -289,7 +289,7 @@ class _LoggedInHomeScreenState extends State<LoggedInHomeScreen> {
                         const SizedBox(height: 14),
                         OutlinedButton.icon(
                           icon: const Icon(Icons.security_outlined),
-                          label: const Text('??????????'),
+                          label: const Text('子どものチャット利用'),
                           onPressed: () => Navigator.of(context).push(
                             MaterialPageRoute<void>(
                               builder: (_) =>

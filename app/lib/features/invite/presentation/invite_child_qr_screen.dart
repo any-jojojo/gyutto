@@ -36,6 +36,12 @@ class _InviteChildQrScreenState extends State<InviteChildQrScreen> {
   var _isSubmitting = false;
   String? _errorMessage;
 
+  @override
+  void initState() {
+    super.initState();
+    _createInvite();
+  }
+
   Future<void> _createInvite() async {
     setState(() {
       _isSubmitting = true;
@@ -56,6 +62,7 @@ class _InviteChildQrScreenState extends State<InviteChildQrScreen> {
       }
 
       final appUser = await userRepository.fetchUser(currentUser.uid);
+      if (!mounted) return;
       final familyId = appUser?.familyId;
       if (familyId == null || familyId.isEmpty) {
         setState(() {
@@ -79,11 +86,13 @@ class _InviteChildQrScreenState extends State<InviteChildQrScreen> {
         _familyId = familyId;
       });
     } on FirebaseException catch (error) {
+      if (!mounted) return;
       setState(() {
         _errorMessage =
             '${AppStrings.createInviteUnknownError} (${error.code})';
       });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = AppStrings.createInviteUnknownError;
       });
@@ -155,22 +164,18 @@ class _InviteChildQrScreenState extends State<InviteChildQrScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              if (invite == null)
+              if (_isSubmitting) ...[
+                const Center(child: CircularProgressIndicator()),
+                const SizedBox(height: 12),
+                const Text('QRコードを準備しています…', textAlign: TextAlign.center),
+              ],
+              if (invite == null && !_isSubmitting && _errorMessage != null)
                 FilledButton.icon(
-                  onPressed: _isSubmitting ? null : _createInvite,
-                  icon: _isSubmitting
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.qr_code_2_outlined),
-                  label: Text(
-                    _isSubmitting
-                        ? AppStrings.creatingInviteCode
-                        : AppStrings.createChildQrInvite,
-                  ),
-                )
-              else ...[
+                  onPressed: _createInvite,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('もう一度試す'),
+                ),
+              if (invite != null) ...[
                 const Text(
                   '子どもが参加を申請したら、下のボタンで参加を許可してください。承認後に家族チャットを利用できます。',
                   textAlign: TextAlign.center,

@@ -214,7 +214,8 @@ void main() {
     await tester.tap(find.text(AppStrings.inviteChildAccount));
     await tester.pumpAndSettle();
     expect(find.text(AppStrings.inviteChildPageTitle), findsWidgets);
-    expect(find.text(AppStrings.createChildQrInvite), findsOneWidget);
+    expect(find.text(AppStrings.createChildQrInvite), findsNothing);
+    expect(find.text('もう一度試す'), findsOneWidget);
   });
 
   testWidgets('shows only child invite action for parent user', (
