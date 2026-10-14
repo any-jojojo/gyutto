@@ -11,6 +11,10 @@ import '../../safety/chat_safety_gate.dart';
 import '../../../models/chat_safety_state.dart';
 import '../../safety/posting_safety.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../services/chat_notification_service.dart';
+
+// Kept for the future moderation release; its backend is not deployed yet.
+const _moderationEnabled = bool.fromEnvironment('ENABLE_CHAT_MODERATION');
 
 class FamilyChatScreen extends StatelessWidget {
   const FamilyChatScreen({
@@ -52,16 +56,25 @@ class _FamilyChatContent extends StatefulWidget {
   State<_FamilyChatContent> createState() => __FamilyChatContentState();
 }
 
-class __FamilyChatContentState extends State<_FamilyChatContent> {
+class __FamilyChatContentState extends State<_FamilyChatContent>
+    with WidgetsBindingObserver, RouteAware {
   final _messageController = TextEditingController();
   late final ChatRepository? _chatRepository;
   late final Stream<List<ChatMessage>> _messagesStream;
   final Set<String> _readRequests = {};
   var _isSending = false;
+  List<ChatMessage> _latestMessages = [];
+  ModalRoute<void>? _route;
+
+  bool get _visible =>
+      (_route?.isCurrent ?? true) &&
+      (WidgetsBinding.instance.lifecycleState == null ||
+          WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed);
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _chatRepository =
         widget.chatRepository ??
         (widget.messagesStream == null ? ChatRepository() : null);
@@ -71,7 +84,44 @@ class __FamilyChatContentState extends State<_FamilyChatContent> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of<void>(context);
+    if (_route != route) {
+      chatRouteObserver.unsubscribe(this);
+      _route = route;
+      if (route != null) chatRouteObserver.subscribe(this, route);
+    }
+    _updateVisibility();
+  }
+
+  void _updateVisibility() {
+    final notifications = ChatNotificationService.instance;
+    if (_visible) {
+      notifications.visibleFamilyId = widget.user.familyId;
+      unawaited(notifications.clear());
+      _markReceivedMessagesAsRead(_latestMessages);
+    } else if (notifications.visibleFamilyId == widget.user.familyId) {
+      notifications.visibleFamilyId = null;
+    }
+  }
+
+  @override
+  void didPushNext() => _updateVisibility();
+  @override
+  void didPopNext() => _updateVisibility();
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) =>
+      _updateVisibility();
+
+  @override
   void dispose() {
+    chatRouteObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
+    if (ChatNotificationService.instance.visibleFamilyId ==
+        widget.user.familyId) {
+      ChatNotificationService.instance.visibleFamilyId = null;
+    }
     _messageController.dispose();
     super.dispose();
   }
@@ -82,11 +132,12 @@ class __FamilyChatContentState extends State<_FamilyChatContent> {
 
     setState(() => _isSending = true);
     try {
-      if (!await ensurePostingConsent(
-        context,
-        widget.user.familyId!,
-        widget.user.uid,
-      )) {
+      if (_moderationEnabled &&
+          !await ensurePostingConsent(
+            context,
+            widget.user.familyId!,
+            widget.user.uid,
+          )) {
         return;
       }
       if (!mounted) return;
@@ -109,6 +160,7 @@ class __FamilyChatContentState extends State<_FamilyChatContent> {
   }
 
   void _markReceivedMessagesAsRead(List<ChatMessage> messages) {
+    if (!_visible) return;
     final unreadMessages = messages.where(
       (message) =>
           message.senderUserId != widget.user.uid &&
@@ -140,61 +192,67 @@ class __FamilyChatContentState extends State<_FamilyChatContent> {
       backgroundColor: const Color(0xFFF3F5F7),
       appBar: AppBar(
         actions: [
-          IconButton(
-            tooltip: 'ユーザーを通報',
-            icon: const Icon(Icons.flag_outlined),
-            onPressed: () => showDialog<void>(
-              context: context,
-              builder: (dialogContext) => AlertDialog(
-                title: const Text('通報するユーザー'),
-                content: SizedBox(
-                  width: 320,
-                  height: 320,
-                  child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                    stream: FirebaseFirestore.instance
-                        .collection('families/${widget.user.familyId}/members')
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasError) return const Text('読み込めませんでした。');
-                      if (!snapshot.hasData) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      final members = snapshot.data!.docs
-                          .where((d) => d.id != widget.user.uid)
-                          .toList();
-                      return ListView(
-                        children: members
-                            .map(
-                              (d) => ListTile(
-                                title: Text(
-                                  d.data()['displayName'] as String? ?? 'メンバー',
+          if (_moderationEnabled)
+            IconButton(
+              tooltip: 'ユーザーを通報',
+              icon: const Icon(Icons.flag_outlined),
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('通報するユーザー'),
+                  content: SizedBox(
+                    width: 320,
+                    height: 320,
+                    child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                      stream: FirebaseFirestore.instance
+                          .collection(
+                            'families/${widget.user.familyId}/members',
+                          )
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) return const Text('読み込めませんでした。');
+                        if (!snapshot.hasData) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        final members = snapshot.data!.docs
+                            .where((d) => d.id != widget.user.uid)
+                            .toList();
+                        return ListView(
+                          children: members
+                              .map(
+                                (d) => ListTile(
+                                  title: Text(
+                                    d.data()['displayName'] as String? ??
+                                        'メンバー',
+                                  ),
+                                  trailing: const Icon(Icons.flag_outlined),
+                                  onTap: () {
+                                    Navigator.pop(dialogContext);
+                                    showReport(
+                                      this.context,
+                                      widget.user.familyId!,
+                                      'user',
+                                      d.id,
+                                    );
+                                  },
                                 ),
-                                trailing: const Icon(Icons.flag_outlined),
-                                onTap: () {
-                                  Navigator.pop(dialogContext);
-                                  showReport(
-                                    this.context,
-                                    widget.user.familyId!,
-                                    'user',
-                                    d.id,
-                                  );
-                                },
-                              ),
-                            )
-                            .toList(),
-                      );
-                    },
+                              )
+                              .toList(),
+                        );
+                      },
+                    ),
                   ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('閉じる'),
+                    ),
+                  ],
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(dialogContext),
-                    child: const Text('閉じる'),
-                  ),
-                ],
               ),
             ),
-          ),
           const SettingsButton(),
         ],
         centerTitle: true,
@@ -223,6 +281,7 @@ class __FamilyChatContentState extends State<_FamilyChatContent> {
                   }
 
                   final messages = snapshot.data!;
+                  _latestMessages = messages;
                   _markReceivedMessagesAsRead(messages);
                   if (messages.isEmpty) {
                     return const _ChatStatus(
@@ -293,7 +352,7 @@ class _MessageBubble extends StatelessWidget {
               ? CrossAxisAlignment.end
               : CrossAxisAlignment.start,
           children: [
-            if (!isMine)
+            if (!isMine && _moderationEnabled)
               PopupMenuButton<String>(
                 tooltip: '投稿・ユーザーを通報',
                 onSelected: onReport,

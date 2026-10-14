@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../services/chat_notification_service.dart';
 
 const accountDeletionUrl = 'https://gyutto-cb454.web.app/';
 const accountDeletionEmail = 'gyutto.delete@gmail.com';
@@ -114,6 +115,31 @@ class SettingsScreen extends StatelessWidget {
     body: ListView(
       padding: const EdgeInsets.all(20),
       children: [
+        if (ChatNotificationService.instance.supported) ...[
+          Card(
+            child: ListTile(
+              contentPadding: const EdgeInsets.all(16),
+              leading: const Icon(Icons.notifications_outlined),
+              title: const Text('メッセージ通知'),
+              subtitle: const Text('通知の許可、音、振動をスマホの設定で変更します。'),
+              trailing: const Icon(Icons.open_in_new),
+              onTap: () async {
+                try {
+                  await ChatNotificationService.instance.openSettings();
+                } catch (_) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('スマホの設定から「ぎゅっと」の通知設定を開いてください。'),
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         Card(
           child: ListTile(
             contentPadding: const EdgeInsets.all(16),

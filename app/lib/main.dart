@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'app.dart';
 import 'firebase_options.dart';
 import 'core/startup/startup_screen.dart';
+import 'services/chat_notification_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,8 +14,9 @@ void main() {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
         );
+        ChatNotificationService.instance.start();
       },
-      app: const GyuttoApp(),
+      app: const GyuttoApp(enableNotifications: true),
     ),
   );
 }

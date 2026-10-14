@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/app_user.dart';
+import '../services/chat_notification_service.dart';
 
 class AuthRepository {
   AuthRepository({FirebaseAuth? firebaseAuth})
@@ -74,7 +75,7 @@ class AuthRepository {
 
   Future<AppUser> startNewAnonymousChildSession() async {
     if (_firebaseAuth.currentUser != null) {
-      await _firebaseAuth.signOut();
+      await signOut();
     }
 
     final credential = await _firebaseAuth.signInAnonymously();
@@ -87,8 +88,9 @@ class AuthRepository {
     return AppUser.fromFirebaseUser(user, role: AppUserRole.child);
   }
 
-  Future<void> signOut() {
-    return _firebaseAuth.signOut();
+  Future<void> signOut() async {
+    await ChatNotificationService.instance.unregisterBeforeSignOut();
+    await _firebaseAuth.signOut();
   }
 }
 

@@ -36,7 +36,8 @@ async function planDeletion(db, uid) {
         (collection === 'chatSafetyEvents' && (data.childUserId === uid || data.changedBy === uid)) ||
         (collection === 'invites' && (data.createdBy === uid || data.usedBy === uid)) ||
         (collection === 'moderationReports' && (data.reporterUserId === uid || data.targetUserId === uid)) ||
-        (collection === 'moderationReportLimits' && d.id === uid)) deletes.add(d.ref.path);
+        (collection === 'moderationReportLimits' && d.id === uid) ||
+        (collection === 'chatPushDevices' && data.uid === uid)) deletes.add(d.ref.path);
   }
   // Removing a document never removes its subcollections automatically.
   for (const d of documents) {
