@@ -14,14 +14,14 @@ import 'app_routes.dart';
 class AppRouter {
   const AppRouter._();
 
-  static Route<void> onGenerateRoute(RouteSettings settings) {
+  static Route<void> onGenerateRoute(RouteSettings settings, {Widget? home}) {
     final routeUri = Uri.parse(settings.name ?? AppRoutes.home);
 
     return MaterialPageRoute<void>(
       settings: settings,
       builder: (context) {
         return switch (routeUri.path) {
-          AppRoutes.home => const HomeScreen(),
+          AppRoutes.home => home ?? const HomeScreen(),
           AppRoutes.login => const LoginScreen(),
           AppRoutes.loggedInHome => const LoggedInHomeScreen(),
           AppRoutes.createFamily => const CreateFamilyScreen(),

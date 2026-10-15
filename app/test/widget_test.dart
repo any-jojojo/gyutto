@@ -71,7 +71,8 @@ void main() {
   });
 
   testWidgets('shows initial home screen', (WidgetTester tester) async {
-    await tester.pumpWidget(const GyuttoApp());
+    await tester.pumpWidget(GyuttoApp(authStateStream: Stream.value(null)));
+    await tester.pumpAndSettle();
 
     expect(find.text(AppStrings.appName), findsOneWidget);
     expect(find.text(AppStrings.homeTitle), findsOneWidget);
@@ -82,7 +83,8 @@ void main() {
   testWidgets('opens login screen from home action', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const GyuttoApp());
+    await tester.pumpWidget(GyuttoApp(authStateStream: Stream.value(null)));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text(AppStrings.createFamily));
     await tester.pumpAndSettle();
@@ -99,7 +101,8 @@ void main() {
   testWidgets('switches login screen to sign up mode', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const GyuttoApp());
+    await tester.pumpWidget(GyuttoApp(authStateStream: Stream.value(null)));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text(AppStrings.createFamily));
     await tester.pumpAndSettle();
