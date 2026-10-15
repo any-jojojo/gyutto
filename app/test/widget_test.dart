@@ -88,6 +88,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(AppStrings.loginTitle), findsWidgets);
+    await tester.scrollUntilVisible(
+      find.text(AppStrings.loginAction),
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text(AppStrings.loginAction), findsOneWidget);
   });
 

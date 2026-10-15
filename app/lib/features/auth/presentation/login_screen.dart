@@ -6,6 +6,7 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../repositories/auth_repository.dart';
 import '../../settings/settings_screen.dart';
+import 'password_reset_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.authRepository});
@@ -247,6 +248,25 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
+              if (_authMode == _AuthMode.login)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _isSubmitting || _successMessage != null
+                        ? null
+                        : () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => PasswordResetScreen(
+                                  initialEmail: _emailController.text,
+                                  authRepository: widget.authRepository,
+                                ),
+                              ),
+                            );
+                          },
+                    child: const Text('パスワードを忘れた方'),
+                  ),
+                ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 16),
                 _AuthErrorMessage(message: _errorMessage!),

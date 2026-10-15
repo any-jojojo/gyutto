@@ -62,6 +62,18 @@ class AuthRepository {
     return AppUser.fromFirebaseUser(user, role: AppUserRole.familyAdmin);
   }
 
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _firebaseAuth.setLanguageCode('ja');
+    try {
+      await _firebaseAuth.sendPasswordResetEmail(email: email.trim());
+    } on FirebaseAuthException catch (error) {
+      // Do not reveal whether an address belongs to an existing account.
+      if (error.code != 'user-not-found' && error.code != 'user-disabled') {
+        rethrow;
+      }
+    }
+  }
+
   Future<AppUser> signInWithCustomToken(String token) async {
     final credential = await _firebaseAuth.signInWithCustomToken(token);
     final user = credential.user;
